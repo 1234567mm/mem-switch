@@ -11,21 +11,43 @@
 - 硬件自适应：自动检测硬件推荐本地模型
 - 纯本地部署：数据不上云
 
-## 开发状态
-
-- Phase 1: 基础框架搭建 (进行中)
-- Phase 2: 核心服务开发 (待开始)
-- Phase 3: 记忆代理 + UI完善 (待开始)
-- Phase 4: 打包 + 文档 (待开始)
-
 ## 开发
 
-```bash
-# 初始化开发环境
-./scripts/setup-dev.sh
+### 初始化
 
-# 启动开发模式
+```bash
+# Windows (PowerShell)
+.\scripts\setup-dev.ps1
+
+# Linux/Mac/WSL
+./scripts/setup-dev.sh
+```
+
+### 启动开发模式
+
+**方式1: 浏览器预览 (无需Tauri)**
+```bash
+# 终端1: 启动后端
+conda activate mem-switch
+cd backend
+uvicorn main:app --host 127.0.0.1 --port 8765 --reload
+
+# 终端2: 启动前端
+cd frontend
 npm run dev
+
+# 浏览器打开 http://localhost:5173
+```
+
+**方式2: 完整桌面应用**
+```bash
+# 终端1: 启动后端
+conda activate mem-switch
+cd backend
+uvicorn main:app --host 127.0.0.1 --port 8765 --reload
+
+# 终端2: 启动Tauri
+npm run tauri dev
 ```
 
 ## 技术栈

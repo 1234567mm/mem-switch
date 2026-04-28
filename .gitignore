@@ -8,7 +8,8 @@ frontend/build/
 
 # Python
 backend/__pycache__/
-backend/*.egg-info/
+backend/**/*.pyc
+backend/**/*.egg-info/
 backend/.venv/
 backend/dist/
 

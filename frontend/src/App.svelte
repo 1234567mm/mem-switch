@@ -4,6 +4,7 @@
   import StatusBar from './components/StatusBar.svelte';
   import StartupGuide from './components/StartupGuide.svelte';
   import SettingsView from './components/SettingsView.svelte';
+  import ImportView from './components/ImportView.svelte';
 
   let placeholderLabel = $derived(
     appState.currentTab === 'knowledge' ? '知识库' :
@@ -35,6 +36,8 @@
         <StartupGuide />
       {:else if appState.currentTab === 'settings'}
         <SettingsView />
+      {:else if appState.currentTab === 'import'}
+        <ImportView />
       {:else}
         <div class="flex items-center justify-center h-full text-gray-500 text-xl">
           {placeholderLabel} - Phase 2 开发中

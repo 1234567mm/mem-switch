@@ -39,6 +39,23 @@ async def list_channels():
     return ChannelListResponse(channels=channels)
 
 
+@router.get("/status")
+async def channels_status():
+    """获取所有通道状态"""
+    channels = channel_mgr.list_channels()
+    return {
+        "channels": [
+            {
+                "platform": ch.platform,
+                "channel_type": ch.channel_type,
+                "enabled": ch.enabled,
+                "connected": ch.enabled,
+            }
+            for ch in channels
+        ]
+    }
+
+
 @router.get("/{platform}", response_model=ChannelResponse)
 async def get_channel(platform: str):
     channel = channel_mgr.get_channel(platform)

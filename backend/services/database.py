@@ -55,6 +55,38 @@ class DocumentRow(Base):
     imported_at = Column(DateTime, default=datetime.now)
 
 
+class ChannelRow(Base):
+    __tablename__ = "channels"
+    id = Column(String, primary_key=True)
+    platform = Column(String, unique=True, nullable=False)
+    channel_type = Column(String, nullable=False, default="default")
+    enabled = Column(Integer, nullable=False, default=1)
+    auto_record = Column(Integer, nullable=False, default=0)
+    created_at = Column(String)
+    updated_at = Column(String)
+
+
+class ChannelConfigRow(Base):
+    __tablename__ = "channel_configs"
+    id = Column(String, primary_key=True)
+    channel_id = Column(String, ForeignKey("channels.id"))
+    recall_count = Column(Integer, nullable=False, default=5)
+    similarity_threshold = Column(Float, nullable=False, default=0.7)
+    injection_position = Column(String, nullable=False, default="system")
+    max_tokens = Column(Integer)
+
+
+class PlatformSettingsRow(Base):
+    __tablename__ = "platform_settings"
+    id = Column(String, primary_key=True)
+    platform = Column(String, unique=True, nullable=False)
+    api_endpoint = Column(String)
+    config_path = Column(String)
+    config_backup = Column(Text)
+    created_at = Column(String)
+    updated_at = Column(String)
+
+
 Base.metadata.create_all(engine)
 
 

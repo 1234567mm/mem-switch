@@ -5,6 +5,7 @@
     { id: 'knowledge', label: '知识库', icon: '📚' },
     { id: 'memory', label: '记忆库', icon: '🧠' },
     { id: 'import', label: '对话导入', icon: '📥' },
+    { id: 'channel', label: '通道路由', icon: '🔀' },
     { id: 'settings', label: '设置', icon: '⚙️' },
   ];
 </script>

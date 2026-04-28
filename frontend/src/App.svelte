@@ -5,11 +5,13 @@
   import StartupGuide from './components/StartupGuide.svelte';
   import SettingsView from './components/SettingsView.svelte';
   import ImportView from './components/ImportView.svelte';
+  import ChannelManagerView from './components/ChannelManagerView.svelte';
 
   let placeholderLabel = $derived(
     appState.currentTab === 'knowledge' ? '知识库' :
     appState.currentTab === 'memory' ? '记忆库' :
-    appState.currentTab === 'import' ? '对话导入' : ''
+    appState.currentTab === 'import' ? '对话导入' :
+    appState.currentTab === 'channel' ? '通道路由' : ''
   );
 
   // 监听后端连接状态
@@ -38,6 +40,8 @@
         <SettingsView />
       {:else if appState.currentTab === 'import'}
         <ImportView />
+      {:else if appState.currentTab === 'channel'}
+        <ChannelManagerView />
       {:else}
         <div class="flex items-center justify-center h-full text-gray-500 text-xl">
           {placeholderLabel} - Phase 2 开发中

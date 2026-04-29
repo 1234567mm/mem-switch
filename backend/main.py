@@ -3,8 +3,12 @@ from api.routes import health, hardware, ollama, settings, knowledge, memory
 import api.routes.import_routes as import_routes
 from api.routes import channels, proxy
 from services.vector_store import VectorStore
+from middleware.logging import LoggingMiddleware
 
 app = FastAPI(title="Mem-Switch Backend", version="0.1.0")
+
+# Register middleware
+app.add_middleware(LoggingMiddleware)
 
 app.include_router(health.router)
 app.include_router(hardware.router)

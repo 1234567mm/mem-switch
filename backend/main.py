@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from api.routes import health, hardware, ollama, settings, knowledge, memory
 import api.routes.import_routes as import_routes
-from api.routes import channels, proxy
+from api.routes import channels, proxy, tasks
 from services.vector_store import VectorStore
 from middleware.logging import LoggingMiddleware
 
@@ -19,6 +19,7 @@ app.include_router(memory.router)
 app.include_router(import_routes.router)
 app.include_router(channels.router)
 app.include_router(proxy.router)
+app.include_router(tasks.router)
 
 vector_store = VectorStore()
 

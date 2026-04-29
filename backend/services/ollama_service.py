@@ -2,8 +2,14 @@ import ollama
 
 
 class OllamaService:
-    def __init__(self, host: str):
-        self.host = host
+    def __init__(self, config=None, host: str = None):
+        if isinstance(config, str):
+            # config is actually the host string
+            self.host = config
+        elif config:
+            self.host = config.get("ollama_host", "http://127.0.0.1:11434")
+        else:
+            self.host = host or "http://127.0.0.1:11434"
 
     def _client(self):
         return ollama.Client(host=self.host)
@@ -36,3 +42,19 @@ class OllamaService:
             return {"status": "success", "model": model_name}
         except Exception as e:
             return {"status": "error", "model": model_name, "error": str(e)}
+
+    def embed(self, text: str, model: str = "nomic-embed-text") -> list[float]:
+        """Generate embeddings for text."""
+        try:
+            resp = self._client().embeddings(model=model, prompt=text)
+            return resp.get("embedding", [])
+        except Exception as e:
+            return []
+
+    def generate(self, prompt: str, model: str = "qwen2.5:7b") -> str:
+        """Generate text response."""
+        try:
+            resp = self._client().generate(model=model, prompt=prompt)
+            return resp.get("response", "")
+        except Exception as e:
+            return f"Error: {e}"

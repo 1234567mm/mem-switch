@@ -127,19 +127,16 @@ class MemoryService:
         limit: int = 100,
     ) -> list[Memory]:
         """列出记忆"""
-        filter_condition = None
-        if memory_type:
-            filter_condition = {"must": [{"key": "type", "match": {"value": memory_type}}]}
-
-        results = self.vector_store.client.scroll(
+        results = self.vector_store.scroll(
             collection_name=self.collection_name,
             limit=limit,
-            query_filter=filter_condition,
         )
 
         memories = []
         for r in results[0]:
             payload = r.payload
+            if memory_type and payload.get("type") != memory_type:
+                continue
             memories.append(Memory(
                 memory_id=payload["memory_id"],
                 type=payload["type"],

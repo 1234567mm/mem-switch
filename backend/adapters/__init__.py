@@ -25,4 +25,7 @@ ADAPTERS = {
 }
 
 
-def get_adapter(source_type: str)
+def get_adapter(source_type: str) -> BaseAdapter:
+    """Get adapter instance for source type"""
+    adapter_class = ADAPTERS.get(source_type, GenericAdapter)
+    return adapter_class()

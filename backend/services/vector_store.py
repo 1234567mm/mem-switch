@@ -148,15 +148,16 @@ class VectorStore:
             Tuple of (list of results, next_page_offset or None)
         """
         collection = self.client.get_collection(collection_name)
-        all_items = collection.get()
+        # Chroma uses peek() with limit parameter
+        result = collection.peek(limit=limit)
 
         results = []
-        for i in range(min(limit, len(all_items["ids"]))):
+        for i in range(len(result["ids"])):
             results.append({
-                "id": all_items["ids"][i],
+                "id": result["ids"][i],
                 "payload": {
-                    "content": all_items["documents"][i],
-                    **({} if not all_items["metadatas"][i] else all_items["metadatas"][i]),
+                    "content": result["documents"][i],
+                    **({} if not result["metadatas"][i] else result["metadatas"][i]),
                 },
             })
 

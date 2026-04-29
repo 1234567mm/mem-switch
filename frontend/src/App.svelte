@@ -6,6 +6,8 @@
   import SettingsView from './components/SettingsView.svelte';
   import ImportView from './components/ImportView.svelte';
   import ChannelManagerView from './components/ChannelManagerView.svelte';
+  import KnowledgeView from './components/KnowledgeView.svelte';
+  import MemoryView from './components/MemoryView.svelte';
 
   let placeholderLabel = $derived(
     appState.currentTab === 'knowledge' ? '知识库' :
@@ -42,6 +44,10 @@
         <ImportView />
       {:else if appState.currentTab === 'channel'}
         <ChannelManagerView />
+      {:else if appState.currentTab === 'knowledge'}
+        <KnowledgeView />
+      {:else if appState.currentTab === 'memory'}
+        <MemoryView />
       {:else}
         <div class="flex items-center justify-center h-full text-gray-500 text-xl">
           {placeholderLabel} - Phase 2 开发中

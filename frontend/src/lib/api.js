@@ -17,4 +17,20 @@ export const api = {
     get: () => getApi().get('/api/settings'),
     update: (data) => getApi().put('/api/settings', data),
   },
+  knowledge: {
+    listBases: () => getApi().get('/api/knowledge/bases'),
+    createBase: (data) => getApi().post('/api/knowledge/bases', data),
+    getBase: (kbId) => getApi().get(`/api/knowledge/bases/${kbId}`),
+    deleteBase: (kbId) => getApi().delete(`/api/knowledge/bases/${kbId}`),
+    listDocs: (kbId) => getApi().get(`/api/knowledge/bases/${kbId}/documents`),
+    search: (kbId, query, limit) => getApi().post(`/api/knowledge/bases/${kbId}/search`, { query, limit }),
+    uploadDoc: (kbId, formData) => getApi().post(`/api/knowledge/bases/${kbId}/documents`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    }),
+  },
+  memory: {
+    list: (type) => getApi().get('/api/memory/list', { params: type ? { memory_type: type } : {} }),
+    search: (query, type, limit) => getApi().post('/api/memory/search', { query, memory_type: type, limit }),
+    delete: (memoryId) => getApi().delete(`/api/memory/${memoryId}`),
+  },
 };

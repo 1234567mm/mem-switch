@@ -1,6 +1,6 @@
 #!/bin/bash
-# Cross-platform build script for Windows using Docker
-# Builds Windows executable from Linux environment
+# Mem-Switch Windows Build Script (cargo-xwin)
+# Builds Windows executable from Linux environment using cargo-xwin
 
 set -e
 
@@ -8,31 +8,30 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
 BUILD_DIR="$PROJECT_ROOT/dist/windows"
 
-echo "🔨 Mem-Switch Windows Build (Docker)"
-echo "===================================="
+echo "🔨 Mem-Switch Windows Build (cargo-xwin)"
+echo "========================================="
 
 # Create build directory
 mkdir -p "$BUILD_DIR"
 
-# Check if Docker is running
-if ! docker info &>/dev/null; then
-    echo "❌ Docker is not running. Please start Docker and try again."
-    exit 1
+# Check if cargo-xwin is installed
+if ! command -v cargo-xwin &> /dev/null; then
+    echo "❌ cargo-xwin not found. Installing..."
+    cargo install cargo-xwin
 fi
 
-echo "✓ Docker is running"
+echo "✓ cargo-xwin is ready"
 
-# Build Windows executable using Tauri CLI in Docker container
+# Build Windows executable using cargo-xwin
 echo ""
 echo "📦 Building Windows executable..."
 echo ""
 
-docker run --rm \
-    -v "$PROJECT_ROOT:/workspace" \
-    -w /workspace/src-tauri \
-    -e CI=true \
-    ghcr.io/tauri-apps/tauri-cli:v2.0.0 \
-    cargo tauri build --target x86_64-pc-windows-msvc --bundles nsis
+cd "$PROJECT_ROOT/src-tauri"
+cargo tauri build \
+  --target x86_64-pc-windows-msvc \
+  --bundles nsis,app \
+  -- --xwin-arch x86_64
 
 # Check build output
 if [ -d "$BUILD_DIR" ]; then
@@ -48,5 +47,5 @@ else
 fi
 
 echo ""
-echo "===================================="
+echo "========================================="
 echo "Build complete!"

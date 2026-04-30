@@ -1,10 +1,21 @@
+from typing import Optional
 from fastapi import APIRouter, HTTPException
+from pydantic import BaseModel
 
 from services.memory_service import MemoryService
 from services.vector_store import VectorStore
 from services.ollama_service import OllamaService
 from config import AppConfig
-from api.schemas.memory import MemoryResponse, SearchMemoriesRequest
+from api.schemas.memory import MemoryResponse, SearchMemoriesRequest, MemoryUpdateRequest
+
+
+class MemoryInvalidateRequest(BaseModel):
+    invalidate: bool
+
+
+class MemoryStatsResponse(BaseModel):
+    call_count: int
+    last_called_at: Optional[str]
 
 router = APIRouter(prefix="/api/memory", tags=["memory"])
 config = AppConfig()
@@ -57,3 +68,34 @@ async def delete_memory(memory_id: str):
     if not success:
         raise HTTPException(status_code=500, detail="Failed to delete memory")
     return {"status": "deleted", "memory_id": memory_id}
+
+
+@router.patch("/{memory_id}")
+async def update_memory(memory_id: str, request: MemoryUpdateRequest):
+    success = memory_svc.update_memory(
+        memory_id,
+        content=request.content,
+        memory_type=request.memory_type,
+    )
+    if not success:
+        raise HTTPException(status_code=500, detail="Failed to update memory")
+    return {"status": "updated", "memory_id": memory_id}
+
+
+@router.post("/{memory_id}/invalidate")
+async def invalidate_memory(memory_id: str, request: MemoryInvalidateRequest):
+    success = memory_svc.invalidate_memory(memory_id, invalidated=request.invalidate)
+    if not success:
+        raise HTTPException(status_code=500, detail="Failed to invalidate memory")
+    return {"status": "ok", "memory_id": memory_id, "invalidated": request.invalidate}
+
+
+@router.get("/{memory_id}/stats", response_model=MemoryStatsResponse)
+async def get_memory_stats(memory_id: str):
+    stats = memory_svc.get_memory_stats(memory_id)
+    if stats is None:
+        raise HTTPException(status_code=404, detail="Memory not found")
+    return MemoryStatsResponse(
+        call_count=stats["call_count"],
+        last_called_at=stats["last_called_at"],
+    )

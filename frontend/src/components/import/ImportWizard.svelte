@@ -3,21 +3,20 @@
   import { addToast } from '../../stores/toast.svelte.js';
   import { api } from '../../lib/api.js';
   import DragDropZone from './DragDropZone.svelte';
-  import ImportProgress from './ImportProgress.svelte';
-  import ImportResultSummary from './ImportResultSummary.svelte';
+  import FileList from './FileList.svelte';
+  import BatchProgress from './BatchProgress.svelte';
 
   let { onComplete } = $props();
 
   // Wizard steps: source -> file -> preview -> importing -> result
   let currentStep = $state('source');
   let sourceType = $state('claude_code');
-  let selectedFile = $state(null);
-  let previewData = $state([]);
-  let importResults = $state([]);
-  let loading = $state(false);
+  let selectedFiles = $state([]);
+  let currentTask = $state(null);
   let importing = $state(false);
-  let importStatus = $state('parsing');
-  let memoriesExtracted = $state(0);
+  let progress = $state({ total: 0, completed: 0, failed: 0, skipped: 0 });
+  let currentFile = $state('');
+  let importResults = $state([]);
   let error = $state('');
 
   const sourceTypes = [
@@ -37,70 +36,113 @@
     currentStep = 'file';
   }
 
-  function handleFileSelect(file) {
-    selectedFile = file;
-    currentStep = 'preview';
-    loadPreview();
-  }
-
-  async function loadPreview() {
-    loading = true;
-    error = '';
-    try {
-      const resp = await api.import.preview(sourceType);
-      previewData = resp.data || [];
-    } catch (e) {
-      error = '预览加载失败';
-      addToast('预览加载失败', 'error');
+  function handleFilesSelect(files) {
+    if (Array.isArray(files)) {
+      selectedFiles = [...selectedFiles, ...files];
+    } else {
+      selectedFiles = [...selectedFiles, files];
     }
-    loading = false;
   }
 
-  async function startImport() {
+  function removeFile(index) {
+    selectedFiles = selectedFiles.filter((_, i) => i !== index);
+  }
+
+  function clearFiles() {
+    selectedFiles = [];
+  }
+
+  function goToPreview() {
+    if (selectedFiles.length === 0) {
+      addToast('请至少选择一个文件', 'error');
+      return;
+    }
+    currentStep = 'preview';
+  }
+
+  async function startBatchImport() {
     importing = true;
-    importStatus = 'parsing';
-    memoriesExtracted = 0;
     currentStep = 'importing';
+    currentTask = null;
+    progress = { total: selectedFiles.length, completed: 0, failed: 0, skipped: 0 };
     error = '';
 
     try {
-      let resp;
+      // 调用批量导入 API
+      const resp = await api.import.batch(sourceType, selectedFiles.map(f => f.path || f.name));
+      currentTask = resp.data.task_id;
 
-      if (selectedFile) {
-        // Upload file
-        importStatus = 'saving';
-        const formData = new FormData();
-        formData.append('file', selectedFile);
-        resp = await api.import.uploadFile(sourceType, formData);
-      } else {
-        // Import from source
-        importStatus = 'extracting';
-        resp = await api.import.conversations(sourceType);
-      }
+      addToast(`批量导入已开始，共 ${selectedFiles.length} 个文件`, 'success');
 
-      importResults = Array.isArray(resp.data) ? resp.data : [resp.data];
-
-      const successCount = importResults.filter(r => r.status === 'success').length;
-      memoriesExtracted = importResults.reduce((sum, r) => sum + (r.memories_created || 0), 0);
-
-      addToast(`导入完成！成功 ${successCount} 个会话，提取 ${memoriesExtracted} 条记忆`, 'success');
-      currentStep = 'result';
+      // 轮询任务状态
+      pollTaskStatus(currentTask);
     } catch (e) {
       error = e.message || '导入失败';
-      addToast('导入失败: ' + error, 'error');
+      addToast('导入失败：' + error, 'error');
+      importing = false;
       currentStep = 'result';
     }
+  }
 
-    importing = false;
+  async function pollTaskStatus(taskId) {
+    while (importing) {
+      try {
+        const resp = await api.import.getTaskStatus(taskId);
+        const data = resp.data;
+
+        progress = {
+          total: data.total_files,
+          completed: data.completed_files,
+          failed: data.failed_files,
+          skipped: data.skipped_files
+        };
+
+        // 更新当前处理文件
+        if (data.files && data.files.length > 0) {
+          const processingFile = data.files.find(f => f.status === 'processing');
+          currentFile = processingFile?.file_name || '';
+        }
+
+        if (data.status === 'completed' || data.status === 'failed') {
+          importing = false;
+
+          if (data.status === 'completed') {
+            addToast(
+              `导入完成：${data.completed_files} 成功，${data.skipped_files} 跳过，${data.failed_files} 失败`,
+              'success'
+            );
+          } else {
+            addToast(
+              `导入完成（部分失败）：${data.completed_files} 成功，${data.skipped_files} 跳过，${data.failed_files} 失败`,
+              'warning'
+            );
+          }
+
+          importResults = data.files || [];
+          currentStep = 'result';
+          break;
+        }
+      } catch (e) {
+        error = e.message || '轮询状态失败';
+        addToast('轮询状态失败', 'error');
+        importing = false;
+        currentStep = 'result';
+        break;
+      }
+
+      // 每 2 秒轮询一次
+      await new Promise(r => setTimeout(r, 2000));
+    }
   }
 
   function resetWizard() {
     currentStep = 'source';
-    selectedFile = null;
-    previewData = [];
+    selectedFiles = [];
+    currentTask = null;
+    importing = false;
+    progress = { total: 0, completed: 0, failed: 0, skipped: 0 };
+    currentFile = '';
     importResults = [];
-    importStatus = 'parsing';
-    memoriesExtracted = 0;
     error = '';
   }
 
@@ -108,13 +150,17 @@
     appState.currentTab = 'memory';
     if (onComplete) onComplete();
   }
+
+  function hasSelectedFiles() {
+    return selectedFiles.length > 0;
+  }
 </script>
 
 <div class="max-w-4xl mx-auto p-8">
   <!-- Header -->
   <div class="text-center mb-8">
-    <h1 class="text-3xl font-bold text-gray-800 mb-2">对话导入</h1>
-    <p class="text-gray-500">将 AI 对话记录导入为可管理的记忆</p>
+    <h1 class="text-3xl font-bold text-gray-800 mb-2">批量导入对话</h1>
+    <p class="text-gray-500">将多个 AI 对话记录批量导入为可管理的记忆</p>
   </div>
 
   <!-- Step Indicator -->
@@ -162,7 +208,7 @@
       </div>
 
     {:else if currentStep === 'file'}
-      <!-- Step 2: Select File -->
+      <!-- Step 2: Select Files -->
       <div class="mb-6">
         <div class="flex items-center gap-3 mb-4">
           <button class="text-blue-600 hover:underline" onclick={() => currentStep = 'source'}>
@@ -170,21 +216,35 @@
           </button>
           <span class="text-gray-400">|</span>
           <span class="text-gray-600">
-            已选择: {sourceTypes.find(s => s.id === sourceType)?.label}
+            已选择：{sourceTypes.find(s => s.id === sourceType)?.label}
           </span>
         </div>
       </div>
 
-      <h2 class="text-xl font-semibold text-gray-800 mb-6 text-center">上传对话文件</h2>
+      <h2 class="text-xl font-semibold text-gray-800 mb-6 text-center">选择对话文件</h2>
 
-      <DragDropZone onFileSelect={handleFileSelect} />
+      <DragDropZone multiple={true} onFilesSelect={handleFilesSelect} />
 
-      <div class="mt-6 text-center">
+      {#if hasSelectedFiles()}
+        <div class="mt-6">
+          <FileList files={selectedFiles} onRemove={removeFile} />
+        </div>
+      {/if}
+
+      <div class="flex justify-center gap-4 mt-6">
         <button
-          class="text-blue-600 hover:underline"
-          onclick={() => { selectedFile = null; currentStep = 'preview'; loadPreview(); }}
+          class="btn-secondary"
+          onclick={clearFiles}
+          disabled={!hasSelectedFiles()}
         >
-          或从已有数据源导入（不上传文件）
+          清空文件
+        </button>
+        <button
+          class="btn-primary px-8"
+          onclick={goToPreview}
+          disabled={!hasSelectedFiles()}
+        >
+          下一步：预览 {hasSelectedFiles() ? `(${selectedFiles.length} 个文件)` : ''}
         </button>
       </div>
 
@@ -193,70 +253,122 @@
       <div class="mb-6">
         <div class="flex items-center gap-3 mb-4">
           <button class="text-blue-600 hover:underline" onclick={() => currentStep = 'file'}>
-            ← 返回上传文件
+            ← 返回文件选择
           </button>
         </div>
       </div>
 
-      <h2 class="text-xl font-semibold text-gray-800 mb-6 text-center">预览对话数据</h2>
+      <h2 class="text-xl font-semibold text-gray-800 mb-6 text-center">确认导入</h2>
 
-      {#if loading}
-        <div class="text-center py-12 text-gray-500">加载中...</div>
-      {:else if previewData.length === 0}
-        <div class="text-center py-12">
-          <div class="text-gray-400 mb-4">未检测到对话数据</div>
-          <button class="btn-secondary" onclick={loadPreview}>
-            重新扫描
-          </button>
+      <div class="space-y-3 mb-6">
+        <div class="p-4 bg-blue-50 rounded-lg">
+          <div class="flex items-center gap-2 text-blue-800">
+            <span class="text-xl">ℹ️</span>
+            <span class="font-medium">导入说明</span>
+          </div>
+          <ul class="mt-2 text-sm text-blue-700 list-disc list-inside space-y-1">
+            <li>共选择 <strong>{selectedFiles.length}</strong> 个文件</li>
+            <li>已导入的会话将自动跳过</li>
+            <li>并发处理数限制为 2 个文件</li>
+            <li>失败的文件可以重新尝试导入</li>
+          </ul>
         </div>
-      {:else}
-        <div class="space-y-3 mb-6">
-          {#each previewData.slice(0, 5) as item}
-            <div class="p-4 border rounded-lg bg-gray-50">
-              <div class="flex justify-between mb-1">
-                <span class="font-medium text-gray-800">{item.source || sourceType}</span>
-                <span class="text-sm text-gray-500">{item.message_count || 0} 条消息</span>
+
+        <div class="p-4 border rounded-lg bg-gray-50">
+          <div class="text-sm font-medium text-gray-700 mb-2">文件列表</div>
+          <div class="max-h-60 overflow-y-auto space-y-1">
+            {#each selectedFiles as file, i}
+              <div class="flex items-center gap-2 text-sm text-gray-600">
+                <span class="text-gray-400">{i + 1}.</span>
+                <span class="truncate">{file.name}</span>
               </div>
-              {#if item.preview}
-                <p class="text-sm text-gray-500 truncate">{item.preview}</p>
-              {/if}
-            </div>
-          {/each}
-          {#if previewData.length > 5}
-            <div class="text-center text-gray-400 text-sm">
-              还有 {previewData.length - 5} 个会话...
-            </div>
-          {/if}
+            {/each}
+          </div>
         </div>
+      </div>
 
-        <div class="flex justify-center gap-4">
-          <button class="btn-secondary" onclick={loadPreview}>
-            重新扫描
-          </button>
-          <button
-            class="btn-primary px-8"
-            onclick={startImport}
-          >
-            开始导入 {previewData.length} 个会话
-          </button>
-        </div>
-      {/if}
+      <div class="flex justify-center gap-4">
+        <button class="btn-secondary" onclick={() => currentStep = 'file'}>
+          返回修改
+        </button>
+        <button
+          class="btn-primary px-8"
+          onclick={startBatchImport}
+        >
+          开始导入
+        </button>
+      </div>
 
     {:else if currentStep === 'importing'}
       <!-- Step 4: Importing -->
-      <ImportProgress
-        status={importStatus}
-        memoriesExtracted={memoriesExtracted}
-        currentStep={importStatus === 'parsing' ? '正在解析对话内容...' : importStatus === 'extracting' ? '正在提取记忆...' : '正在保存...'}
+      <BatchProgress
+        total={progress.total}
+        completed={progress.completed}
+        failed={progress.failed}
+        skipped={progress.skipped}
+        currentFile={currentFile}
       />
 
     {:else if currentStep === 'result'}
       <!-- Step 5: Result -->
-      <ImportResultSummary
-        results={importResults}
-        onViewMemories={goToMemories}
-        onImportMore={resetWizard}
-      />
+      <div class="text-center">
+        <div class="text-5xl mb-4">
+          {#if progress.failed === 0}
+            ✅
+          {:else}
+            ⚠️
+          {/if}
+        </div>
+
+        <h2 class="text-xl font-semibold text-gray-800 mb-4">
+          {#if progress.failed === 0}
+            导入完成！
+          {:else}
+            导入完成（部分失败）
+          {/if}
+        </h2>
+
+        <div class="grid grid-cols-3 gap-4 mb-6">
+          <div class="p-4 bg-green-50 rounded-lg">
+            <div class="text-2xl font-bold text-green-600">{progress.completed}</div>
+            <div class="text-sm text-green-700">成功</div>
+          </div>
+          <div class="p-4 bg-amber-50 rounded-lg">
+            <div class="text-2xl font-bold text-amber-600">{progress.skipped}</div>
+            <div class="text-sm text-amber-700">跳过</div>
+          </div>
+          <div class="p-4 bg-red-50 rounded-lg">
+            <div class="text-2xl font-bold text-red-600">{progress.failed}</div>
+            <div class="text-sm text-red-700">失败</div>
+          </div>
+        </div>
+
+        {#if importResults.length > 0 && importResults.some(f => f.status === 'failed')}
+          <div class="mb-6 p-4 border rounded-lg bg-gray-50 text-left">
+            <div class="font-medium text-gray-700 mb-2">失败文件详情</div>
+            <div class="space-y-2 text-sm">
+              {#each importResults.filter(f => f.status === 'failed') as file}
+                <div class="flex items-start gap-2">
+                  <span class="text-red-500">✗</span>
+                  <div>
+                    <div class="font-medium text-gray-800">{file.file_name}</div>
+                    <div class="text-red-600">{file.error || '未知错误'}</div>
+                  </div>
+                </div>
+              {/each}
+            </div>
+          </div>
+        {/if}
+
+        <div class="flex justify-center gap-4">
+          <button class="btn-secondary" onclick={resetWizard}>
+            导入更多文件
+          </button>
+          <button class="btn-primary" onclick={goToMemories}>
+            查看记忆
+          </button>
+        </div>
+      </div>
     {/if}
   </div>
 </div>

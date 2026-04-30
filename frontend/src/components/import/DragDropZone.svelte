@@ -1,5 +1,5 @@
 <script>
-  let { onFileSelect } = $props();
+  let { onFilesSelect, multiple = false } = $props();
 
   let isDragging = $state(false);
   let fileInput = $state(null);
@@ -18,14 +18,29 @@
     isDragging = false;
     const files = e.dataTransfer?.files;
     if (files && files.length > 0) {
-      onFileSelect(files[0]);
+      const fileArray = Array.from(files).filter(f =>
+        f.name.endsWith('.json') ||
+        f.name.endsWith('.md') ||
+        f.name.endsWith('.txt') ||
+        f.name.endsWith('.html')
+      );
+      if (multiple) {
+        onFilesSelect(fileArray);
+      } else {
+        onFilesSelect(fileArray[0]);
+      }
     }
   }
 
   function handleFileInput(e) {
-    const file = e.target.files?.[0];
-    if (file) {
-      onFileSelect(file);
+    const files = e.target.files;
+    if (files && files.length > 0) {
+      const fileArray = Array.from(files);
+      if (multiple) {
+        onFilesSelect(fileArray);
+      } else {
+        onFilesSelect(fileArray[0]);
+      }
     }
   }
 
@@ -50,6 +65,7 @@
     class="hidden"
     onchange={handleFileInput}
     accept=".json,.md,.txt,.html"
+    multiple={multiple}
   />
 
   <div class="text-5xl mb-4 {isDragging ? 'text-blue-500' : 'text-gray-400'}">
@@ -65,10 +81,10 @@
   </div>
 
   <div class="text-sm text-gray-500 mb-4">
-    或点击选择文件
+    或点击选择文件{multiple ? '（可多选）' : ''}
   </div>
 
   <div class="text-xs text-gray-400">
-    支持格式: JSON, Markdown, TXT, HTML
+    支持格式：JSON, Markdown, TXT, HTML
   </div>
 </div>

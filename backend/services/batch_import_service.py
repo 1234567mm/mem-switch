@@ -26,7 +26,7 @@ class BatchImportService:
         vector_store: VectorStore,
         ollama_service: OllamaService,
         config: AppConfig,
-        max_concurrent_files: int = 5,
+        max_concurrent_files: int = 2,
     ):
         self.vector_store = vector_store
         self.ollama = ollama_service

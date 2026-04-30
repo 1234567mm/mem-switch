@@ -1,11 +1,21 @@
+from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from api.routes import health, hardware, ollama, settings, knowledge, memory, search
 import api.routes.import_routes as import_routes
 from api.routes import channels, proxy, tasks
-from services.vector_store import VectorStore
 from middleware.logging import LoggingMiddleware
 
-app = FastAPI(title="Mem-Switch Backend", version="0.1.0")
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Lifespan context manager for startup/shutdown events."""
+    print("Mem-Switch backend starting...")
+    print(f"Qdrant collections initialized")
+    yield
+    print("Mem-Switch backend shutting down...")
+
+
+app = FastAPI(title="Mem-Switch Backend", version="0.1.0", lifespan=lifespan)
 
 # Register middleware
 app.add_middleware(LoggingMiddleware)
@@ -22,10 +32,4 @@ app.include_router(channels.router)
 app.include_router(proxy.router)
 app.include_router(tasks.router)
 
-vector_store = VectorStore()
-
-
-@app.on_event("startup")
-async def startup():
-    print("Mem-Switch backend starting...")
-    print(f"Qdrant collections initialized")
+vector_store = None  # Will be initialized on first use

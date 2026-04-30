@@ -27,11 +27,14 @@ class TestImportBatch:
         )
         assert "task_id" in result or result.get("status") == "error"
 
-    def test_skips_already_imported_session(self, import_service, tmp_session, tmp_path):
+    def test_skips_already_imported_session(self, import_service, tmp_session, tmp_path, mock_vector_store):
         from services.database import SessionRow
-        existing = SessionRow(id="dup-session", source="json_file")
+        existing = SessionRow(id="dup-session", source="json_file", deleted=False)
         tmp_session.add(existing)
         tmp_session.commit()
+
+        # Mock vector store to return found (indicating duplicate)
+        mock_vector_store.client.retrieve.return_value = [MagicMock()]
 
         src = tmp_path / "dup.json"
         src.write_text(json.dumps([{

@@ -1,7 +1,9 @@
 <script>
   let { total, completed, failed, skipped, currentFile } = $props();
 
-  $ progressPercent = total > 0 ? ((completed + failed + skipped) / total) * 100 : 0;
+  function getProgressPercent() {
+    return total > 0 ? ((completed + failed + skipped) / total) * 100 : 0;
+  }
 </script>
 
 <div class="space-y-4">
@@ -14,7 +16,7 @@
     <div class="h-3 bg-gray-200 rounded-full overflow-hidden">
       <div
         class="h-full bg-blue-500 transition-all duration-300"
-        style="width: {progressPercent}%"
+        style="width: {getProgressPercent()}%"
       />
     </div>
   </div>

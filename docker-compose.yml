@@ -1,0 +1,30 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    ports:
+      - "8765:8765"
+    volumes:
+      - mem-switch-data:/root/.local/share/Mem-Switch
+    environment:
+      # Linux: 使用 host.gateway 访问宿主机
+      - OLLAMA_HOST=http://172.17.0.1:11434
+      # Windows Docker Desktop: 使用 host.docker.internal
+      # - OLLAMA_HOST=http://host.docker.internal:11434
+
+  frontend:
+    image: node:20-slim
+    working_dir: /app
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend:/app
+    command: sh -c "npm install && npm run dev -- --host"
+    environment:
+      - VITE_API_URL=http://localhost:8765
+
+volumes:
+  mem-switch-data:

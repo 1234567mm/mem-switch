@@ -1,5 +1,6 @@
 from .base_adapter import BaseAdapter, Conversation, ImportResult
 from .claude_code_adapter import ClaudeCodeAdapter
+from .claude_mem_adapter import ClaudeMemAdapter
 from .codex_adapter import CodexAdapter
 from .openclaw_adapter import OpenClawAdapter
 from .opencode_adapter import OpenCodeAdapter
@@ -13,6 +14,7 @@ from .generic_adapter import GenericAdapter
 
 ADAPTERS = {
     'claude_code': ClaudeCodeAdapter,
+    'claude_mem': ClaudeMemAdapter,
     'codex': CodexAdapter,
     'openclaw': OpenClawAdapter,
     'opencode': OpenCodeAdapter,

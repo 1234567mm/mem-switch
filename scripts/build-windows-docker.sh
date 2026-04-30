@@ -28,10 +28,10 @@ echo "📦 Building Windows executable..."
 echo ""
 
 cd "$PROJECT_ROOT/src-tauri"
-cargo tauri build \
-  --target x86_64-pc-windows-msvc \
-  --bundles nsis,app \
-  -- --xwin-arch x86_64
+cargo xwin build --release --target x86_64-pc-windows-msvc
+
+# Tauri build for Windows bundles
+cargo tauri build --target x86_64-pc-windows-msvc
 
 # Check build output
 if [ -d "$BUILD_DIR" ]; then

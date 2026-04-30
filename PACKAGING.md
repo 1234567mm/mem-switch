@@ -1,23 +1,60 @@
 # Mem-Switch 打包指南
 
+## 支持的平台
+
+| 平台 | 架构 | 状态 | 安装包格式 |
+|------|------|------|-----------|
+| Windows | x86_64 (Intel/AMD) | ✅ 已支持 | NSIS (.exe) |
+| Windows | ARM64 (Apple Silicon, Surface Pro X) | 🔄 待配置 | NSIS (.exe) |
+| Linux | x86_64 | ✅ 已支持 | AppImage, .deb |
+| Linux | ARM64 | 🔄 待配置 | AppImage, .deb |
+| macOS | x86_64 | ✅ 已支持 | .app, .dmg |
+| macOS | ARM64 (Apple Silicon) | 🔄 待配置 | .app, .dmg |
+
+---
+
 ## Windows 打包
 
-### 方式一：Docker 跨平台构建（推荐）
+### 方式一：cargo-xwin 跨平台构建（推荐）
 
-在 Linux 环境下使用 Docker 构建 Windows 安装包：
+使用 cargo-xwin 在 Linux 环境下交叉编译 Windows 安装包：
 
 ```bash
 # 运行构建脚本
 ./scripts/build-windows-docker.sh
 ```
 
+**支持架构**:
+- `x86_64-pc-windows-msvc` - Intel/AMD 64 位
+- `aarch64-pc-windows-msvc` - ARM64 (Apple Silicon Windows, Surface Pro X 等)
+
 **输出位置**: `dist/windows/`
 
 ### 方式二：本地 Windows 环境
 
+在 Windows 上直接构建：
+
 ```bash
 cd src-tauri
+
+# x86_64
 cargo tauri build --target x86_64-pc-windows-msvc
+
+# ARM64
+cargo tauri build --target aarch64-pc-windows-msvc
+```
+
+### 多架构同时构建
+
+```bash
+# 构建所有 Windows 架构
+cd src-tauri
+
+# x86_64
+cargo tauri build --target x86_64-pc-windows-msvc --bundles nsis
+
+# ARM64
+cargo tauri build --target aarch64-pc-windows-msvc --bundles nsis
 ```
 
 ### 安装选项
@@ -27,6 +64,13 @@ Windows 安装包支持：
 - ✅ 每用户/每机器安装模式
 - ✅ 中文/英文语言选择
 - ✅ 干净卸载（可选保留用户数据）
+
+### Windows 架构说明
+
+| 架构 | 目标设备 | 适用场景 |
+|------|----------|----------|
+| x86_64 | Intel/AMD 台式机和笔记本 | 大多数 Windows PC |
+| ARM64 | Surface Pro X, Windows on ARM 笔记本, Apple Silicon (Windows 模拟) | 新一代 ARM Windows 设备 |
 
 ---
 
@@ -42,6 +86,16 @@ Windows 安装包支持：
 **输出位置**: `src-tauri/target/release/bundle/`
 - `*.AppImage` - 便携式应用镜像
 - `*.deb` - Debian/Ubuntu 安装包
+
+### 多架构构建
+
+```bash
+# x86_64
+cargo tauri build --target x86_64-unknown-linux-gnu
+
+# ARM64
+cargo tauri build --target aarch64-unknown-linux-gnu
+```
 
 ### WSL/无桌面环境支持
 
@@ -80,19 +134,44 @@ Windows 11 + WSLg 用户：
    ./mem-switch
    ```
 
+### Linux 架构说明
+
+| 架构 | 目标设备 | 适用场景 |
+|------|----------|----------|
+| x86_64 | Intel/AMD PC 和服务器 | 大多数 Linux 设备 |
+| ARM64 | Raspberry Pi 4, Apple Silicon Mac (Linux), ARM 服务器 | 嵌入式设备, 新一代硬件 |
+
 ---
 
 ## macOS 打包
 
 ```bash
 cd src-tauri
+
+# Intel (x86_64)
+cargo tauri build --target x86_64-apple-darwin
+
+# Apple Silicon (ARM64)
+cargo tauri build --target aarch64-apple-darwin
+
+# 通用二进制（包含两种架构）
 cargo tauri build --target x86_64-apple-darwin
 cargo tauri build --target aarch64-apple-darwin
+# 然后使用 ditto 合并：
+ditto -c -k --keep-parent src-tauri/target/release/bundle/x86_64/mem-switch.app src-tauri/target/release/bundle/mem-switch-universal.app
 ```
 
 **输出位置**: `src-tauri/target/release/bundle/`
 - `*.app` - 应用程序包
 - `*.dmg` - 磁盘镜像安装包
+
+### macOS 架构说明
+
+| 架构 | 目标设备 | 适用场景 |
+|------|----------|----------|
+| x86_64 | Intel Mac | 旧款 Mac 设备 |
+| ARM64 | Apple Silicon Mac (M1/M2/M3/M4) | 新款 Mac 设备 |
+| Universal | 同时包含 x86_64 和 ARM64 | 在所有 Mac 上运行 |
 
 ---
 
@@ -103,17 +182,20 @@ cargo tauri build --target aarch64-apple-darwin
 - 语言选择（中文/英文）
 - 干净卸载
 - 桌面/开始菜单快捷方式
+- 多架构支持
 
 ### Linux (AppImage/deb)
 - 无需 root 权限运行
 - 自动检测图形环境
 - WSL/WSLg 支持
 - 依赖检查和提示
+- 多架构支持
 
 ### macOS (app/dmg)
 - 拖拽安装
 - 签名和公证（需要开发者证书）
 - 自动更新支持
+- 通用二进制支持
 
 ---
 
@@ -123,6 +205,11 @@ cargo tauri build --target aarch64-apple-darwin
 - 确保有管理员权限
 - 关闭杀毒软件/Windows Defender 临时
 - 检查磁盘空间
+- 确认目标架构与 Windows 版本匹配
+
+### Windows ARM 架构问题
+- 确认 Windows on ARM 已启用开发者模式
+- ARM64 应用在 x86_64 Windows 上通过模拟运行可能较慢
 
 ### Linux 启动失败
 ```bash
@@ -170,15 +257,25 @@ xcrun notarytool submit mem-switch.app --keychain-profile "your-profile"
 
 ---
 
-## 版本发布
+## 版本发布检查清单
 
-1. 更新版本号：`src-tauri/tauri.conf.json`
-2. 构建所有平台
-3. 生成 SHA256 校验和
-4. 创建 GitHub Release
-5. 上传安装包
+- [ ] 更新版本号：`src-tauri/tauri.conf.json`
+- [ ] 构建 Windows x86_64
+- [ ] 构建 Windows ARM64
+- [ ] 构建 Linux x86_64
+- [ ] 构建 Linux ARM64
+- [ ] 构建 macOS x86_64 (如适用)
+- [ ] 构建 macOS ARM64 (如适用)
+- [ ] 生成 SHA256 校验和
+- [ ] 创建 GitHub Release
+- [ ] 上传所有安装包
+- [ ] 更新下载页面说明
 
 ```bash
-# 生成校验和
-sha256sum Mem-Switch*.exe Mem-Switch*.AppImage Mem-Switch*.deb > SHA256SUMS.txt
+# 生成校验和示例
+sha256sum Mem-Switch_0.1.0_x64-setup.exe \
+          Mem-Switch_0.1.0_ARM64-setup.exe \
+          Mem-Switch_0.1.0_amd64.AppImage \
+          Mem-Switch_0.1.0_arm64.AppImage \
+          > SHA256SUMS.txt
 ```

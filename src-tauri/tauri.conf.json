@@ -34,18 +34,7 @@
       "certificateThumbprint": null,
       "digestAlgorithm": "sha256",
       "timestampUrl": "",
-      "nsis": {
-        "installerIcon": "icons/icon.ico",
-        "headerImage": null,
-        "sidebarImage": null,
-        "installMode": "both",
-        "languages": ["SimpChinese", "English"],
-        "displayLanguageSelector": true,
-        "oneClick": false,
-        "allowToChangeInstallationDirectory": true,
-        "perMachine": true,
-        "uninstallDisplayName": "Mem-Switch"
-      }
+      "nsis": null
     },
     "linux": {
       "appimage": {

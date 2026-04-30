@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from api.routes import health, hardware, ollama, settings, knowledge, memory
+from api.routes import health, hardware, ollama, settings, knowledge, memory, search
 import api.routes.import_routes as import_routes
 from api.routes import channels, proxy, tasks
 from services.vector_store import VectorStore
@@ -16,6 +16,7 @@ app.include_router(ollama.router)
 app.include_router(settings.router)
 app.include_router(knowledge.router)
 app.include_router(memory.router)
+app.include_router(search.router)
 app.include_router(import_routes.router)
 app.include_router(channels.router)
 app.include_router(proxy.router)

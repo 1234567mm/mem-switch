@@ -1,5 +1,6 @@
 <script>
   import { appState } from './stores/app.svelte.js';
+  import { toastState, addToast } from './stores/toast.svelte.js';
   import Sidebar from './components/Sidebar.svelte';
   import StatusBar from './components/StatusBar.svelte';
   import StartupGuide from './components/StartupGuide.svelte';
@@ -8,6 +9,7 @@
   import ChannelManagerView from './components/ChannelManagerView.svelte';
   import KnowledgeView from './components/KnowledgeView.svelte';
   import MemoryView from './components/MemoryView.svelte';
+  import Toast from './components/shared/Toast.svelte';
 
   let placeholderLabel = $derived(
     appState.currentTab === 'knowledge' ? '知识库' :
@@ -21,9 +23,15 @@
     const checkBackend = async () => {
       try {
         await fetch(appState.backendUrl + '/api/health');
-        appState.backendReady = true;
+        if (!appState.backendReady) {
+          appState.backendReady = true;
+          addToast('后端服务已连接', 'success');
+        }
       } catch {
-        appState.backendReady = false;
+        if (appState.backendReady) {
+          appState.backendReady = false;
+          addToast('后端服务连接断开', 'error');
+        }
       }
     };
     checkBackend();
@@ -32,9 +40,9 @@
   });
 </script>
 
-<div class="flex h-screen bg-gray-100">
+<div class="flex h-screen bg-gray-50">
   <Sidebar />
-  <main class="flex-1 flex flex-col">
+  <main class="flex-1 flex flex-col relative">
     <div class="flex-1 overflow-auto">
       {#if appState.currentTab === 'startup'}
         <StartupGuide />
@@ -56,4 +64,11 @@
     </div>
     <StatusBar />
   </main>
+</div>
+
+<!-- Toast 通知层 -->
+<div class="fixed top-4 right-4 z-50 flex flex-col gap-2">
+  {#each toastState.toasts as toast (toast.id)}
+    <Toast {...toast} />
+  {/each}
 </div>

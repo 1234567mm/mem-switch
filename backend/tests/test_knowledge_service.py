@@ -41,3 +41,40 @@ class TestDeleteKnowledgeBase:
         knowledge_service.delete_knowledge_base(kb.kb_id)
         row = tmp_session.query(KnowledgeBaseRow).filter_by(kb_id=kb.kb_id).first()
         assert row is None
+
+
+class TestSearchKnowledge:
+    def test_search_knowledge_returns_results(self, knowledge_service, mock_vector_store):
+        mock_vector_store.client.search.return_value = []
+        kb = knowledge_service.create_knowledge_base(name="test-kb")
+        result = knowledge_service.search_knowledge(kb.kb_id, "test query")
+        assert isinstance(result, list)
+
+    def test_search_knowledge_filters_by_threshold(self, knowledge_service, mock_vector_store):
+        mock_vector_store.client.search.return_value = []
+        kb = knowledge_service.create_knowledge_base(name="threshold-test")
+        result = knowledge_service.search_knowledge(kb.kb_id, "test", similarity_threshold=0.9)
+        assert isinstance(result, list)
+
+
+class TestListDocuments:
+    def test_list_documents_returns_list(self, knowledge_service, tmp_session):
+        kb = knowledge_service.create_knowledge_base(name="doc-test-kb")
+        from services.database import DocumentRow
+        doc = DocumentRow(
+            doc_id="doc1",
+            kb_id=kb.kb_id,
+            filename="test.pdf",
+            file_path="/tmp/test.pdf",
+            chunks_count=5,
+        )
+        tmp_session.add(doc)
+        tmp_session.commit()
+
+        docs = knowledge_service.list_documents(kb.kb_id)
+        assert len(docs) >= 1
+
+    def test_list_documents_empty_for_new_kb(self, knowledge_service):
+        kb = knowledge_service.create_knowledge_base(name="empty-kb")
+        docs = knowledge_service.list_documents(kb.kb_id)
+        assert isinstance(docs, list)

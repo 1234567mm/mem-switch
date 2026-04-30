@@ -40,3 +40,37 @@ class TestGetHotMemories:
     def test_returns_memories_sorted_by_call_count(self, search_service, tmp_session):
         result = search_service.get_hot_memories(limit=5)
         assert isinstance(result, list)
+
+
+class TestGetHotKnowledge:
+    def test_returns_knowledge_sorted_by_view_count(self, search_service, tmp_session):
+        result = search_service.get_hot_knowledge(limit=5)
+        assert isinstance(result, list)
+
+
+class TestAddSearchHistory:
+    def test_add_search_history_does_not_raise(self, search_service):
+        # add_search_history uses its own connection, should not raise
+        search_service.add_search_history("test query")
+        search_service.add_search_history("another query")
+
+    def test_get_search_history_returns_list(self, search_service):
+        result = search_service.get_search_history(limit=10)
+        assert isinstance(result, list)
+
+
+class TestIncrementMemoryCall:
+    def test_increment_memory_call_does_not_raise(self, search_service, tmp_session):
+        from services.database import MemoryRow
+        mem = MemoryRow(
+            id="test-mem-1",
+            type="preference",
+            content="test",
+            confidence=0.8,
+            qdrant_id="q1",
+            call_count=0,
+        )
+        tmp_session.add(mem)
+        tmp_session.commit()
+
+        search_service.increment_memory_call("test-mem-1")

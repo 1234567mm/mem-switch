@@ -2,58 +2,92 @@
 
 ## 支持的平台
 
-| 平台 | 架构 | 状态 | 安装包格式 |
-|------|------|------|-----------|
-| Windows | x86_64 (Intel/AMD) | ✅ 已支持 | NSIS (.exe) |
-| Windows | ARM64 (Apple Silicon, Surface Pro X) | 🔄 待配置 | NSIS (.exe) |
-| Linux | x86_64 | ✅ 已支持 | AppImage, .deb |
-| Linux | ARM64 | 🔄 待配置 | AppImage, .deb |
-| macOS | x86_64 | ✅ 已支持 | .app, .dmg |
-| macOS | ARM64 (Apple Silicon) | 🔄 待配置 | .app, .dmg |
+| 平台 | 架构 | 状态 | 安装包格式 | 构建方式 |
+|------|------|------|-----------|----------|
+| Windows | x86_64 | ✅ 已完成 | exe (需 Windows 生成 NSIS) | 本地/交叉编译 |
+| Windows | ARM64 | ✅ 已完成 | exe | 交叉编译 (cargo-xwin) |
+| Linux | x86_64 | ✅ 已完成 | AppImage, .deb | 本地构建 |
+| Linux | ARM64 | 🔲 待构建 | AppImage, .deb | 本地构建 |
+| macOS | x86_64 | ✅ 已完成 | .app | GitHub Actions |
+| macOS | ARM64 | ✅ 已完成 | .app | GitHub Actions |
+| macOS | Universal | ✅ 已完成 | .app (双架构) | GitHub Actions |
+
+---
+
+## GitHub Actions 自动构建（推荐）
+
+使用 GitHub Actions 进行跨平台自动构建：
+
+### 触发构建
+
+**方式 1：推送版本标签**
+```bash
+# 编辑版本号
+vim src-tauri/Cargo.toml
+
+# 创建并推送标签
+git tag v0.1.0
+git push origin v0.1.0
+```
+
+**方式 2：使用发布脚本**
+```bash
+./scripts/release.sh 0.1.0
+```
+
+**方式 3：手动触发**
+1. 访问 GitHub Actions 页面
+2. 选择 "Release Build" workflow
+3. 点击 "Run workflow"
+
+### 构建产物
+
+| 平台 | 架构 | 产物 |
+|------|------|------|
+| Windows | x86_64 | Mem-Switch_x64.exe |
+| Windows | ARM64 | Mem-Switch_ARM64.exe |
+| Linux | x86_64 | Mem-Switch_amd64.AppImage, .deb |
+| Linux | ARM64 | Mem-Switch_arm64.AppImage, .deb |
+| macOS | x86_64 | Mem-Switch.app |
+| macOS | ARM64 | Mem-Switch.app |
+| macOS | Universal | Mem-Switch.app (x64+ARM64) |
 
 ---
 
 ## Windows 打包
 
-### 方式一：cargo-xwin 跨平台构建（推荐）
+### 方式一：cargo-xwin 交叉编译（exe 可执行文件）
 
-使用 cargo-xwin 在 Linux 环境下交叉编译 Windows 安装包：
+使用 cargo-xwin 在 Linux 环境下交叉编译 Windows exe：
 
 ```bash
 # 运行构建脚本
 ./scripts/build-windows-docker.sh
+
+# 仅 x86_64
+./scripts/build-windows-docker.sh --x64
+
+# x86_64 + ARM64
+./scripts/build-windows-docker.sh --all
 ```
 
 **支持架构**:
 - `x86_64-pc-windows-msvc` - Intel/AMD 64 位
-- `aarch64-pc-windows-msvc` - ARM64 (Apple Silicon Windows, Surface Pro X 等)
+- `aarch64-pc-windows-msvc` - ARM64
 
 **输出位置**: `dist/windows/`
 
-### 方式二：本地 Windows 环境
+### 方式二：本地 Windows 环境（NSIS 安装包）
 
-在 Windows 上直接构建：
+在 Windows 上直接构建，可生成 NSIS 安装包：
 
 ```bash
 cd src-tauri
 
-# x86_64
-cargo tauri build --target x86_64-pc-windows-msvc
-
-# ARM64
-cargo tauri build --target aarch64-pc-windows-msvc
-```
-
-### 多架构同时构建
-
-```bash
-# 构建所有 Windows 架构
-cd src-tauri
-
-# x86_64
+# x86_64 + NSIS
 cargo tauri build --target x86_64-pc-windows-msvc --bundles nsis
 
-# ARM64
+# ARM64 + NSIS
 cargo tauri build --target aarch64-pc-windows-msvc --bundles nsis
 ```
 
@@ -70,7 +104,7 @@ Windows 安装包支持：
 | 架构 | 目标设备 | 适用场景 |
 |------|----------|----------|
 | x86_64 | Intel/AMD 台式机和笔记本 | 大多数 Windows PC |
-| ARM64 | Surface Pro X, Windows on ARM 笔记本, Apple Silicon (Windows 模拟) | 新一代 ARM Windows 设备 |
+| ARM64 | Surface Pro X, Windows on ARM 笔记本 | 新一代 ARM Windows 设备 |
 
 ---
 
@@ -145,6 +179,24 @@ Windows 11 + WSLg 用户：
 
 ## macOS 打包
 
+**注意**：macOS 构建需要 macOS 环境，无法在 Linux/Windows 交叉编译。
+
+### 方式一：GitHub Actions（推荐）
+
+推送版本标签自动触发构建：
+```bash
+git tag v0.1.0
+git push origin v0.1.0
+```
+
+macOS 构建将在 GitHub Actions macOS runner 上自动执行，生成：
+- x86_64 .app
+- ARM64 .app
+- Universal .app (x64 + ARM64 合并)
+
+### 方式二：本地 macOS
+
+在 macOS 设备上执行：
 ```bash
 cd src-tauri
 
@@ -155,15 +207,14 @@ cargo tauri build --target x86_64-apple-darwin
 cargo tauri build --target aarch64-apple-darwin
 
 # 通用二进制（包含两种架构）
-cargo tauri build --target x86_64-apple-darwin
-cargo tauri build --target aarch64-apple-darwin
-# 然后使用 ditto 合并：
-ditto -c -k --keep-parent src-tauri/target/release/bundle/x86_64/mem-switch.app src-tauri/target/release/bundle/mem-switch-universal.app
+lipo -create \
+  target/x86_64-apple-darwin/release/mem-switch-desktop \
+  target/aarch64-apple-darwin/release/mem-switch-desktop \
+  -output target/universal/mem-switch-desktop
 ```
 
 **输出位置**: `src-tauri/target/release/bundle/`
 - `*.app` - 应用程序包
-- `*.dmg` - 磁盘镜像安装包
 
 ### macOS 架构说明
 
@@ -259,23 +310,33 @@ xcrun notarytool submit mem-switch.app --keychain-profile "your-profile"
 
 ## 版本发布检查清单
 
-- [ ] 更新版本号：`src-tauri/tauri.conf.json`
-- [ ] 构建 Windows x86_64
-- [ ] 构建 Windows ARM64
-- [ ] 构建 Linux x86_64
-- [ ] 构建 Linux ARM64
-- [ ] 构建 macOS x86_64 (如适用)
-- [ ] 构建 macOS ARM64 (如适用)
-- [ ] 生成 SHA256 校验和
-- [ ] 创建 GitHub Release
-- [ ] 上传所有安装包
-- [ ] 更新下载页面说明
+使用 GitHub Actions 自动构建：
+
+1. [ ] 更新版本号：`src-tauri/tauri.conf.json` 中的 `version`
+2. [ ] 更新版本号：`src-tauri/Cargo.toml` 中的 `version`
+3. [ ] 本地测试确认无问题
+4. [ ] 提交并推送更改
+5. [ ] 创建版本标签：
+   ```bash
+   git tag v0.1.0 -m "Release v0.1.0"
+   git push origin v0.1.0
+   ```
+6. [ ] 等待 GitHub Actions 完成构建
+7. [ ] 检查 Release Draft 中的构建产物
+8. [ ] 如需要，添加签名和公证（macOS）
+9. [ ] 发布 GitHub Release
+
+**自动构建产物**：
+- Windows x86_64 exe
+- Windows ARM64 exe
+- Linux x86_64 AppImage + deb
+- Linux ARM64 AppImage + deb (如果 Linux runner 支持)
+- macOS Universal app
 
 ```bash
-# 生成校验和示例
-sha256sum Mem-Switch_0.1.0_x64-setup.exe \
-          Mem-Switch_0.1.0_ARM64-setup.exe \
-          Mem-Switch_0.1.0_amd64.AppImage \
+# 快速发布命令
+./scripts/release.sh 0.1.0
+```
           Mem-Switch_0.1.0_arm64.AppImage \
           > SHA256SUMS.txt
 ```

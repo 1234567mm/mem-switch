@@ -126,12 +126,13 @@ class SearchService:
         if total_count < SMALL_DATA_THRESHOLD:
             # 小数据量：使用 LIKE 搜索文档内容
             # 需要从向量存储中搜索，因为 DocumentRow 只存储元数据
-            doc_rows = session.query(DocumentRow).limit(1000).all()
+            doc_rows = session.query(DocumentRow).limit(SMALL_DATA_THRESHOLD).all()
             kb_ids = list(set(d.kb_id for d in doc_rows))
 
+            # Compute embedding once outside loop
+            query_emb = self.ollama.embed(query)
             results = []
             for kb_id in kb_ids:
-                query_emb = self.ollama.embed(query)
                 vector_results = self.vector_store.search(
                     collection_name="knowledge",
                     query_vector=query_emb,
@@ -178,13 +179,15 @@ class SearchService:
         from config import SQLITE_DIR
 
         conn = sqlite3.connect(SQLITE_DIR / "metadata.db")
-        cursor = conn.cursor()
-        cursor.execute(
-            "INSERT INTO search_history (query, timestamp) VALUES (?, ?)",
-            (query, datetime.now().isoformat()),
-        )
-        conn.commit()
-        conn.close()
+        try:
+            cursor = conn.cursor()
+            cursor.execute(
+                "INSERT INTO search_history (query, timestamp) VALUES (?, ?)",
+                (query, datetime.now().isoformat()),
+            )
+            conn.commit()
+        finally:
+            conn.close()
 
     def get_search_history(self, limit: int = 10) -> list:
         """获取搜索历史"""
@@ -192,13 +195,15 @@ class SearchService:
         from config import SQLITE_DIR
 
         conn = sqlite3.connect(SQLITE_DIR / "metadata.db")
-        cursor = conn.cursor()
-        cursor.execute(
-            "SELECT id, query, timestamp FROM search_history ORDER BY timestamp DESC LIMIT ?",
-            (limit,),
-        )
-        rows = cursor.fetchall()
-        conn.close()
+        try:
+            cursor = conn.cursor()
+            cursor.execute(
+                "SELECT id, query, timestamp FROM search_history ORDER BY timestamp DESC LIMIT ?",
+                (limit,),
+            )
+            rows = cursor.fetchall()
+        finally:
+            conn.close()
 
         return [
             {"id": r[0], "query": r[1], "timestamp": r[2]}

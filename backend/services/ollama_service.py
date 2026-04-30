@@ -3,13 +3,14 @@ import ollama
 
 class OllamaService:
     def __init__(self, config=None, host: str = None):
-        if isinstance(config, str):
-            # config is actually the host string
+        if host:
+            self.host = host
+        elif isinstance(config, str):
             self.host = config
         elif config:
             self.host = config.get("ollama_host", "http://127.0.0.1:11434")
         else:
-            self.host = host or "http://127.0.0.1:11434"
+            self.host = "http://127.0.0.1:11434"
 
     def _client(self):
         return ollama.Client(host=self.host)

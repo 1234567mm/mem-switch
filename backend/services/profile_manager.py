@@ -76,3 +76,4 @@ class ProfileManager:
         profile = self._profiles.get(profile_id)
         if not profile:
             return ""
+        return profile.summary

@@ -1,15 +1,17 @@
 <script>
   import { appState } from './stores/app.svelte.js';
   import { toastState, addToast } from './stores/toast.svelte.js';
+  import { onboardingState } from './stores/onboarding.svelte.js';
   import Sidebar from './components/Sidebar.svelte';
   import StatusBar from './components/StatusBar.svelte';
   import StartupGuide from './components/StartupGuide.svelte';
+  import OnboardingWizard from './components/onboarding/OnboardingWizard.svelte';
   import SettingsView from './components/SettingsView.svelte';
   import ImportView from './components/ImportView.svelte';
   import ChannelManagerView from './components/ChannelManagerView.svelte';
   import KnowledgeView from './components/KnowledgeView.svelte';
   import MemoryView from './components/MemoryView.svelte';
-  import Toast from './components/shared/Toast.svelte';
+  import Toast from './components/Toast.svelte';
 
   let placeholderLabel = $derived(
     appState.currentTab === 'knowledge' ? '知识库' :
@@ -40,31 +42,37 @@
   });
 </script>
 
-<div class="flex h-screen bg-gray-50">
-  <Sidebar />
-  <main class="flex-1 flex flex-col relative">
-    <div class="flex-1 overflow-auto">
-      {#if appState.currentTab === 'startup'}
-        <StartupGuide />
-      {:else if appState.currentTab === 'settings'}
-        <SettingsView />
-      {:else if appState.currentTab === 'import'}
-        <ImportView />
-      {:else if appState.currentTab === 'channel'}
-        <ChannelManagerView />
-      {:else if appState.currentTab === 'knowledge'}
-        <KnowledgeView />
-      {:else if appState.currentTab === 'memory'}
-        <MemoryView />
-      {:else}
-        <div class="flex items-center justify-center h-full text-gray-500 text-xl">
-          {placeholderLabel} - Phase 2 开发中
-        </div>
-      {/if}
-    </div>
-    <StatusBar />
-  </main>
-</div>
+{#if onboardingState.isFirstRun && !onboardingState.completed}
+  <!-- 首次启动引导 -->
+  <OnboardingWizard />
+{:else}
+  <!-- 主界面 -->
+  <div class="flex h-screen bg-gray-50">
+    <Sidebar />
+    <main class="flex-1 flex flex-col relative">
+      <div class="flex-1 overflow-auto">
+        {#if appState.currentTab === 'startup'}
+          <StartupGuide />
+        {:else if appState.currentTab === 'settings'}
+          <SettingsView />
+        {:else if appState.currentTab === 'import'}
+          <ImportView />
+        {:else if appState.currentTab === 'channel'}
+          <ChannelManagerView />
+        {:else if appState.currentTab === 'knowledge'}
+          <KnowledgeView />
+        {:else if appState.currentTab === 'memory'}
+          <MemoryView />
+        {:else}
+          <div class="flex items-center justify-center h-full text-gray-500 text-xl">
+            {placeholderLabel} - Phase 2 开发中
+          </div>
+        {/if}
+      </div>
+      <StatusBar />
+    </main>
+  </div>
+{/if}
 
 <!-- Toast 通知层 -->
 <div class="fixed top-4 right-4 z-50 flex flex-col gap-2">

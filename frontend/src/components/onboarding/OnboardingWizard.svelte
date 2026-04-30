@@ -11,9 +11,9 @@
     selectEmbeddingModel,
     markDataImported,
     completeOnboarding,
-  } from '../stores/onboarding.svelte.js';
-  import { addToast } from '../stores/toast.svelte.js';
-  import { api } from '../lib/api.js';
+  } from '../../stores/onboarding.svelte.js';
+  import { addToast } from '../../stores/toast.svelte.js';
+  import { api } from '../../lib/api.js';
 
   let ollamaUrlInput = $state('http://localhost:11434');
   let pullingModel = $state(false);

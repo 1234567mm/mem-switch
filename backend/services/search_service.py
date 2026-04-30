@@ -3,6 +3,8 @@
 from typing import Optional
 from datetime import datetime
 from dataclasses import dataclass
+from functools import lru_cache
+import time
 
 from services.vector_store import VectorStore
 from services.ollama_service import OllamaService
@@ -11,6 +13,12 @@ from services.database import get_session, MemoryRow, DocumentRow
 
 # 小数据量阈值
 SMALL_DATA_THRESHOLD = 1000
+
+# 搜索超时 (秒)
+SEARCH_TIMEOUT = 30
+
+# 缓存配置
+CACHE_TTL_SECONDS = 300  # 5 分钟缓存
 
 
 @dataclass
@@ -28,6 +36,29 @@ class SearchService:
     def __init__(self):
         self.vector_store = VectorStore()
         self.ollama = OllamaService()
+        # 简单缓存：{key: {"results": data, "timestamp": float}}
+        self._cache = {}
+
+    def _get_cache_key(self, query: str, scopes: list, limit: int) -> str:
+        """生成缓存键"""
+        return f"{query}:{','.join(sorted(scopes))}:{limit}"
+
+    def _get_from_cache(self, key: str) -> Optional[dict]:
+        """从缓存获取结果"""
+        if key not in self._cache:
+            return None
+        cached = self._cache[key]
+        if time.time() - cached["timestamp"] > CACHE_TTL_SECONDS:
+            del self._cache[key]
+            return None
+        return cached["results"]
+
+    def _set_cache(self, key: str, results: dict):
+        """设置缓存"""
+        self._cache[key] = {
+            "results": results,
+            "timestamp": time.time()
+        }
 
     def unified_search(self, query: str, scopes: list, limit: int = 20) -> dict:
         """统一搜索入口
@@ -40,23 +71,49 @@ class SearchService:
         Returns:
             {"memory": {...}, "knowledge": {...}}
         """
+        # 尝试缓存
+        cache_key = self._get_cache_key(query, scopes, limit)
+        cached = self._get_from_cache(cache_key)
+        if cached:
+            cached["_from_cache"] = True
+            return cached
+
+        # 执行搜索（带超时控制）
+        start_time = time.time()
         results = {}
         session = get_session()
         try:
             if "memory" in scopes:
-                results["memory"] = self.search_memories(query, limit, session)
+                timeout = max(1, SEARCH_TIMEOUT - (time.time() - start_time))
+                results["memory"] = self.search_memories(query, limit, session, timeout=timeout)
             if "knowledge" in scopes:
-                results["knowledge"] = self.search_knowledge(query, limit, session)
+                timeout = max(1, SEARCH_TIMEOUT - (time.time() - start_time))
+                results["knowledge"] = self.search_knowledge(query, limit, session, timeout=timeout)
         finally:
             session.close()
+
+        # 缓存结果
+        self._set_cache(cache_key, results)
+
+        # 添加搜索历史（异步，不阻塞）
+        self.add_search_history(query)
+
         return results
 
-    def search_memories(self, query: str, limit: int, session) -> dict:
+    def search_memories(self, query: str, limit: int, session, timeout: int = SEARCH_TIMEOUT) -> dict:
         """搜索记忆库
 
         - 小数据量 (< 1000): 直接 LIKE 搜索
         - 大数据量 (>= 1000): 向量搜索
+
+        Args:
+            query: 搜索查询
+            limit: 结果数量限制
+            session: 数据库会话
+            timeout: 超时时间（秒）
         """
+        start_time = time.time()
+
         # 检查数据量
         total_count = session.query(MemoryRow).count()
 
@@ -82,6 +139,11 @@ class SearchService:
         else:
             # 大数据量：使用向量搜索
             query_emb = self.ollama.embed(query)
+
+            # 检查超时
+            if time.time() - start_time > timeout:
+                raise TimeoutError(f"Search timeout after {timeout}s")
+
             vector_results = self.vector_store.search(
                 collection_name="memories",
                 query_vector=query_emb,
@@ -116,10 +178,20 @@ class SearchService:
             "results": results,
             "total": total_count,
             "method": "like" if total_count < SMALL_DATA_THRESHOLD else "vector",
+            "elapsed_ms": int((time.time() - start_time) * 1000),
         }
 
-    def search_knowledge(self, query: str, limit: int, session) -> dict:
-        """搜索知识库"""
+    def search_knowledge(self, query: str, limit: int, session, timeout: int = SEARCH_TIMEOUT) -> dict:
+        """搜索知识库
+
+        Args:
+            query: 搜索查询
+            limit: 结果数量限制
+            session: 数据库会话
+            timeout: 超时时间（秒）
+        """
+        start_time = time.time()
+
         # 获取所有文档数量
         total_count = session.query(DocumentRow).count()
 
@@ -131,6 +203,11 @@ class SearchService:
 
             # Compute embedding once outside loop
             query_emb = self.ollama.embed(query)
+
+            # 检查超时
+            if time.time() - start_time > timeout:
+                raise TimeoutError(f"Search timeout after {timeout}s")
+
             results = []
             for kb_id in kb_ids:
                 vector_results = self.vector_store.search(
@@ -151,6 +228,11 @@ class SearchService:
         else:
             # 大数据量：使用向量搜索
             query_emb = self.ollama.embed(query)
+
+            # 检查超时
+            if time.time() - start_time > timeout:
+                raise TimeoutError(f"Search timeout after {timeout}s")
+
             vector_results = self.vector_store.search(
                 collection_name="knowledge",
                 query_vector=query_emb,
@@ -171,6 +253,7 @@ class SearchService:
             "results": results[:limit],
             "total": total_count,
             "method": "like" if total_count < SMALL_DATA_THRESHOLD else "vector",
+            "elapsed_ms": int((time.time() - start_time) * 1000),
         }
 
     def add_search_history(self, query: str):

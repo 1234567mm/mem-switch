@@ -32,6 +32,9 @@ export const api = {
     list: (type) => getApi().get('/api/memory/list', { params: type ? { memory_type: type } : {} }),
     search: (query, type, limit) => getApi().post('/api/memory/search', { query, memory_type: type, limit }),
     delete: (memoryId) => getApi().delete(`/api/memory/${memoryId}`),
+    update: (id, data) => getApi().patch(`/api/memory/${id}`, data),
+    invalidate: (id, invalidate) => getApi().post(`/api/memory/${id}/invalidate`, { invalidate }),
+    getStats: (id) => getApi().get(`/api/memory/${id}/stats`),
   },
   channels: {
     list: () => getApi().get('/api/channels'),

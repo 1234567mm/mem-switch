@@ -7,8 +7,8 @@ on:
   workflow_dispatch:
     inputs:
       platforms:
-        description: 'Platforms to build (linux,windows,macos)'
-        required: true
+        description: 'Platforms to build (all, linux, windows, macos)'
+        required: false
         default: 'all'
 
 env:
@@ -38,11 +38,15 @@ jobs:
         run: |
           cd src-tauri
           cargo tauri build --target x86_64-unknown-linux-gnu --bundles appimage,deb
+        env:
+          CARGO_INCREMENTAL: 0
 
       - name: Build Linux ARM64
         run: |
           cd src-tauri
           cargo tauri build --target aarch64-unknown-linux-gnu --bundles appimage,deb
+        env:
+          CARGO_INCREMENTAL: 0
 
       - name: Upload Linux artifacts
         uses: actions/upload-artifact@v4
@@ -55,7 +59,7 @@ jobs:
             src-tauri/target/aarch64-unknown-linux-gnu/release/bundle/**/*.deb
 
   # ============================================
-  # Windows Build (NSIS + exe) using cross-compilation
+  # Windows Build (exe via cargo-xwin cross-compilation)
   # ============================================
   build-windows:
     runs-on: ubuntu-24.04
@@ -93,16 +97,8 @@ jobs:
             src-tauri/target/x86_64-pc-windows-msvc/release/*.exe
             src-tauri/target/aarch64-pc-windows-msvc/release/*.exe
 
-      # NOTE: NSIS installer requires Windows environment
-      # Run on Windows runner for NSIS:
-      - name: Build Windows NSIS (Windows only)
-        if: false  # Enable when using windows-latest runner
-        run: |
-          cd src-tauri
-          cargo tauri build --target x86_64-pc-windows-msvc --bundles nsis
-
   # ============================================
-  # macOS Build (app + dmg)
+  # macOS Build (requires macOS runner)
   # ============================================
   build-macos:
     runs-on: macos-latest
@@ -119,21 +115,24 @@ jobs:
         run: |
           cd src-tauri
           cargo tauri build --target x86_64-apple-darwin
+        env:
+          CARGO_INCREMENTAL: 0
 
       - name: Build macOS ARM64
         run: |
           cd src-tauri
           cargo tauri build --target aarch64-apple-darwin
+        env:
+          CARGO_INCREMENTAL: 0
 
-      - name: Build Universal Binary
+      - name: Create Universal Binary
         run: |
-          # Create universal binary using lipo
+          cd src-tauri
+          mkdir -p target/universal/release
           lipo -create \
-            src-tauri/target/x86_64-apple-darwin/release/mem-switch-desktop \
-            src-tauri/target/aarch64-apple-darwin/release/mem-switch-desktop \
-            -output src-tauri/target/universal/mem-switch-desktop
-          mkdir -p src-tauri/target/universal/bundle
-          cp src-tauri/target/x86_64-apple-darwin/release/bundle/*.app src-tauri/target/universal/bundle/ || true
+            target/x86_64-apple-darwin/release/mem-switch-desktop \
+            target/aarch64-apple-darwin/release/mem-switch-desktop \
+            -output target/universal/release/mem-switch-desktop
 
       - name: Upload macOS artifacts
         uses: actions/upload-artifact@v4
@@ -142,10 +141,10 @@ jobs:
           path: |
             src-tauri/target/x86_64-apple-darwin/release/bundle/**/*
             src-tauri/target/aarch64-apple-darwin/release/bundle/**/*
-            src-tauri/target/universal/bundle/**/*
+            src-tauri/target/universal/release/mem-switch-desktop
 
   # ============================================
-  # Create Release (all platforms)
+  # Create Release
   # ============================================
   release:
     needs: [build-linux, build-windows, build-macos]
@@ -156,11 +155,13 @@ jobs:
     steps:
       - name: Download all artifacts
         uses: actions/download-artifact@v4
+        with:
+          path: artifacts
 
       - name: Generate checksums
         run: |
           cd artifacts
-          sha256sum * > SHA256SUMS.txt
+          find . -type f -exec sha256sum {} \; > SHA256SUMS.txt
           cat SHA256SUMS.txt
 
       - name: Create Release

@@ -46,6 +46,11 @@ export const api = {
     preview: (sourceType) => getApi().get('/api/import/preview', { params: { source_type: sourceType } }),
     conversations: (sourceType) => getApi().post('/api/import/conversations', { source_type: sourceType, extract_memories: true }),
     uploadFile: (sourceType, formData) => getApi().post(`/api/import/upload?source_type=${sourceType}`, formData),
+    // Batch import
+    batch: (sourceType, files) => getApi().post('/api/import/batch', { source_type: sourceType, files }),
+    listTasks: () => getApi().get('/api/import/tasks'),
+    getTaskStatus: (taskId) => getApi().get(`/api/import/tasks/${taskId}`),
+    retryFailed: (taskId) => getApi().post(`/api/import/tasks/${taskId}/retry`),
   },
   search: {
     unified: (data) => getApi().post('/api/search/unified', data),

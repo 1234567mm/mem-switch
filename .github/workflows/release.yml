@@ -32,7 +32,27 @@ jobs:
       - name: Install Linux dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y libgtk-3-0 libwebkit2gtk-4.0-37 libappindicator3-1
+          sudo apt-get install -y libgtk-3-0 libwebkit2gtk-4.0-37 libappindicator3-1 libevdev-dev libxtst-dev libx11-dev libxfixes-dev
+
+      - name: Cache cargo registry
+        uses: actions/cache@v4
+        with:
+          path: ~/.cargo/registry
+          key: linux-cargo-registry-${{ hashFiles('src-tauri/Cargo.lock') }}
+
+      - name: Cache cargo index
+        uses: actions/cache@v4
+        with:
+          path: ~/.cargo/git
+          key: linux-cargo-index-${{ hashFiles('src-tauri/Cargo.lock') }}
+
+      - name: Cache build artifacts
+        uses: actions/cache@v4
+        with:
+          path: src-tauri/target
+          key: linux-cargo-build-${{ hashFiles('src-tauri/Cargo.lock') }}
+          restore-keys: |
+            linux-cargo-build-
 
       - name: Build Linux x86_64
         run: |
@@ -57,9 +77,10 @@ jobs:
             src-tauri/target/x86_64-unknown-linux-gnu/release/bundle/**/*.deb
             src-tauri/target/aarch64-unknown-linux-gnu/release/bundle/**/*.AppImage
             src-tauri/target/aarch64-unknown-linux-gnu/release/bundle/**/*.deb
+          retention-days: 5
 
   # ============================================
-  # Windows Build (exe via cargo-xwin cross-compilation)
+  # Windows Build (NSIS installer via cargo-xwin)
   # ============================================
   build-windows:
     runs-on: ubuntu-24.04
@@ -75,27 +96,52 @@ jobs:
       - name: Install cargo-xwin
         run: cargo install cargo-xwin
 
+      - name: Cache cargo registry
+        uses: actions/cache@v4
+        with:
+          path: ~/.cargo/registry
+          key: windows-cargo-registry-${{ hashFiles('src-tauri/Cargo.lock') }}
+
+      - name: Cache cargo index
+        uses: actions/cache@v4
+        with:
+          path: ~/.cargo/git
+          key: windows-cargo-index-${{ hashFiles('src-tauri/Cargo.lock') }}
+
+      - name: Cache build artifacts
+        uses: actions/cache@v4
+        with:
+          path: src-tauri/target
+          key: windows-cargo-build-${{ hashFiles('src-tauri/Cargo.lock') }}
+          restore-keys: |
+            windows-cargo-build-
+
       - name: Build Windows x86_64
         env:
           CARGO_TARGET_X86_64_PC_WINDOWS_MSVC_LINKER: clang-cl
         run: |
           cd src-tauri
-          cargo xwin build --release --target x86_64-pc-windows-msvc
+          cargo xwin build --release --target x86_64-pc-windows-msvc --bundles nsis
+        env:
+          CARGO_INCREMENTAL: 0
 
       - name: Build Windows ARM64
         env:
           CARGO_TARGET_AARCH64_PC_WINDOWS_MSVC_LINKER: clang-cl
         run: |
           cd src-tauri
-          cargo xwin build --release --target aarch64-pc-windows-msvc
+          cargo xwin build --release --target aarch64-pc-windows-msvc --bundles nsis
+        env:
+          CARGO_INCREMENTAL: 0
 
       - name: Upload Windows artifacts
         uses: actions/upload-artifact@v4
         with:
           name: windows-builds
           path: |
-            src-tauri/target/x86_64-pc-windows-msvc/release/*.exe
-            src-tauri/target/aarch64-pc-windows-msvc/release/*.exe
+            src-tauri/target/x86_64-pc-windows-msvc/release/bundle/nsis/*.exe
+            src-tauri/target/aarch64-pc-windows-msvc/release/bundle/nsis/*.exe
+          retention-days: 5
 
   # ============================================
   # macOS Build (requires macOS runner)
@@ -110,6 +156,26 @@ jobs:
         uses: dtolnay/rust-action@stable
         with:
           targets: x86_64-apple-darwin,aarch64-apple-darwin
+
+      - name: Cache cargo registry
+        uses: actions/cache@v4
+        with:
+          path: ~/.cargo/registry
+          key: macos-cargo-registry-${{ hashFiles('src-tauri/Cargo.lock') }}
+
+      - name: Cache cargo index
+        uses: actions/cache@v4
+        with:
+          path: ~/.cargo/git
+          key: macos-cargo-index-${{ hashFiles('src-tauri/Cargo.lock') }}
+
+      - name: Cache build artifacts
+        uses: actions/cache@v4
+        with:
+          path: src-tauri/target
+          key: macos-cargo-build-${{ hashFiles('src-tauri/Cargo.lock') }}
+          restore-keys: |
+            macos-cargo-build-
 
       - name: Build macOS x86_64
         run: |
@@ -142,6 +208,7 @@ jobs:
             src-tauri/target/x86_64-apple-darwin/release/bundle/**/*
             src-tauri/target/aarch64-apple-darwin/release/bundle/**/*
             src-tauri/target/universal/release/mem-switch-desktop
+          retention-days: 5
 
   # ============================================
   # Create Release
@@ -161,7 +228,7 @@ jobs:
       - name: Generate checksums
         run: |
           cd artifacts
-          find . -type f -exec sha256sum {} \; > SHA256SUMS.txt
+          find . -type f ! -name "SHA256SUMS.txt" -exec sha256sum {} \; > SHA256SUMS.txt
           cat SHA256SUMS.txt
 
       - name: Create Release

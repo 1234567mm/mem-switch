@@ -4,6 +4,8 @@
 
 ![Version](https://img.shields.io/badge/version-0.1.0-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
+![Build](https://img.shields.io/badge/build-passing-brightgreen.svg)
+![Platforms](https://img.shields.io/badge/platforms-Windows%20%7C%20Linux%20%7C%20macOS-blue)
 
 ## ✨ 核心功能
 
@@ -168,14 +170,23 @@ npm run tauri dev
 
 ### 打包
 
-**Linux**:
+**Linux** (AppImage + deb):
 ```bash
 ./scripts/build-linux.sh
 ```
+输出：`src-tauri/target/release/bundle/`
 
-**Windows (Docker 跨平台)**:
+**Windows** (cargo-xwin 跨平台构建):
 ```bash
 ./scripts/build-windows-docker.sh
+```
+输出：`dist/windows/`
+
+**macOS** (DMG):
+```bash
+cd src-tauri
+cargo tauri build --target aarch64-apple-darwin
+cargo tauri build --target x86_64-apple-darwin
 ```
 
 详见 [PACKAGING.md](PACKAGING.md)

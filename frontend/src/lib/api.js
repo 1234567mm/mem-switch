@@ -33,4 +33,9 @@ export const api = {
     search: (query, type, limit) => getApi().post('/api/memory/search', { query, memory_type: type, limit }),
     delete: (memoryId) => getApi().delete(`/api/memory/${memoryId}`),
   },
+  channels: {
+    list: () => getApi().get('/api/channels'),
+    update: (channelId, data) => getApi().put(`/api/channels/${channelId}`, data),
+    switch: (channelId, channelType) => getApi().post(`/api/channels/${channelId}/switch`, { channel_type: channelType }),
+  },
 };

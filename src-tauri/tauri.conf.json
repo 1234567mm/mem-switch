@@ -38,9 +38,13 @@
         "installerIcon": "icons/icon.ico",
         "headerImage": null,
         "sidebarImage": null,
-        "installMode": "currentUser",
+        "installMode": "both",
         "languages": ["SimpChinese", "English"],
-        "displayLanguageSelector": true
+        "displayLanguageSelector": true,
+        "oneClick": false,
+        "allowToChangeInstallationDirectory": true,
+        "perMachine": true,
+        "uninstallDisplayName": "Mem-Switch"
       }
     },
     "linux": {
@@ -48,7 +52,7 @@
         "bundleMediaFramework": false
       },
       "deb": {
-        "depends": []
+        "depends": ["libgtk-3-0", "libwebkit2gtk-4.0-37", "libappindicator3-1"]
       }
     }
   }

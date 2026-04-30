@@ -300,3 +300,60 @@ class MemoryService:
     ) -> dict:
         """从记忆更新画像"""
         return {"status": "updated"}
+
+    def merge_memories(
+        self,
+        memory_ids: list[str],
+        merged_content: str = None,
+        merged_type: str = None,
+    ) -> Optional[dict]:
+        """合并多条记忆为一条"""
+        try:
+            # 获取所有记忆
+            results = self.vector_store.client.retrieve(
+                collection_name=self.collection_name,
+                ids=memory_ids,
+            )
+
+            if len(results) != len(memory_ids):
+                return None
+
+            # 提取记忆内容
+            memories_data = []
+            for r in results:
+                payload = r.payload
+                memories_data.append({
+                    "memory_id": payload["memory_id"],
+                    "content": payload["content"],
+                    "type": payload["type"],
+                    "created_at": payload["created_at"],
+                })
+
+            # 如果未提供合并后的内容，使用第一条记忆的内容
+            if merged_content is None:
+                merged_content = "\n\n".join([m["content"] for m in memories_data])
+
+            # 如果未提供类型，使用第一条记忆的类型
+            if merged_type is None:
+                merged_type = memories_data[0]["type"]
+
+            # 创建新的合并后的记忆
+            new_memory = self.create_memory(
+                content=merged_content,
+                memory_type=merged_type,
+                source_session_id="merge_" + memory_ids[0],
+            )
+
+            # 删除原始记忆
+            deleted_ids = []
+            for memory_id in memory_ids:
+                if self.delete_memory(memory_id):
+                    deleted_ids.append(memory_id)
+
+            return {
+                "memory_id": new_memory.memory_id,
+                "deleted_ids": deleted_ids,
+            }
+        except Exception as e:
+            print(f"合并记忆失败：{e}")
+            return None

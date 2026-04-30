@@ -6,7 +6,7 @@ from services.memory_service import MemoryService
 from services.vector_store import VectorStore
 from services.ollama_service import OllamaService
 from config import AppConfig
-from api.schemas.memory import MemoryResponse, SearchMemoriesRequest, MemoryUpdateRequest
+from api.schemas.memory import MemoryResponse, SearchMemoriesRequest, MemoryUpdateRequest, MemoryMergeRequest
 
 
 class MemoryInvalidateRequest(BaseModel):
@@ -99,3 +99,25 @@ async def get_memory_stats(memory_id: str):
         call_count=stats["call_count"],
         last_called_at=stats["last_called_at"],
     )
+
+
+@router.post("/merge")
+async def merge_memories(request: MemoryMergeRequest):
+    """合并多条记忆"""
+    if len(request.memory_ids) < 2:
+        raise HTTPException(status_code=400, detail="至少需要选择 2 条记忆进行合并")
+
+    result = memory_svc.merge_memories(
+        memory_ids=request.memory_ids,
+        merged_content=request.merged_content,
+        merged_type=request.merged_type,
+    )
+
+    if result is None:
+        raise HTTPException(status_code=500, detail="合并失败")
+
+    return {
+        "status": "merged",
+        "merged_memory_id": result["memory_id"],
+        "deleted_ids": result["deleted_ids"],
+    }

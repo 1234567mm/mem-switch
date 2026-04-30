@@ -17,3 +17,14 @@ class SearchMemoriesRequest(BaseModel):
     query: str
     memory_type: str = None
     limit: int = 10
+
+
+class MemoryUpdateRequest(BaseModel):
+    content: str = None
+    memory_type: str = None
+
+
+class MemoryMergeRequest(BaseModel):
+    memory_ids: list[str]
+    merged_content: str = None
+    merged_type: str = None

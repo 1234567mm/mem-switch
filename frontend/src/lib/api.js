@@ -35,6 +35,7 @@ export const api = {
     update: (id, data) => getApi().patch(`/api/memory/${id}`, data),
     invalidate: (id, invalidate) => getApi().post(`/api/memory/${id}/invalidate`, { invalidate }),
     getStats: (id) => getApi().get(`/api/memory/${id}/stats`),
+    merge: (memoryIds, mergedContent, mergedType) => getApi().post('/api/memory/merge', { memory_ids: memoryIds, merged_content: mergedContent, merged_type: mergedType }),
   },
   channels: {
     list: () => getApi().get('/api/channels'),

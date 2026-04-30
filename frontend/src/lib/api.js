@@ -38,4 +38,14 @@ export const api = {
     update: (channelId, data) => getApi().put(`/api/channels/${channelId}`, data),
     switch: (channelId, channelType) => getApi().post(`/api/channels/${channelId}/switch`, { channel_type: channelType }),
   },
+  import: {
+    preview: (sourceType) => getApi().get('/api/import/preview', { params: { source_type: sourceType } }),
+    conversations: (sourceType) => getApi().post('/api/import/conversations', { source_type: sourceType, extract_memories: true }),
+    uploadFile: (sourceType, formData) => getApi().post(`/api/import/upload?source_type=${sourceType}`, formData),
+  },
+  search: {
+    unified: (data) => getApi().post('/api/search/unified', data),
+    history: (limit) => getApi().get('/api/search/history', { params: { limit } }),
+    hot: (scope, limit) => getApi().get('/api/search/hot', { params: { scope, limit } }),
+  },
 };

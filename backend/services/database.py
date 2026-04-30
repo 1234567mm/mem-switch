@@ -31,6 +31,7 @@ class MemoryRow(Base):
     confidence = Column(Float)
     qdrant_id = Column(String)
     source_session_id = Column(String)
+    call_count = Column(Integer, default=0)
 
 
 class KnowledgeBaseRow(Base):
@@ -53,6 +54,7 @@ class DocumentRow(Base):
     file_path = Column(String)
     chunks_count = Column(Integer)
     imported_at = Column(DateTime, default=datetime.now)
+    view_count = Column(Integer, default=0)
 
 
 class ChannelRow(Base):
@@ -88,6 +90,30 @@ class PlatformSettingsRow(Base):
 
 
 Base.metadata.create_all(engine)
+
+
+def init_db():
+    """Initialize database with additional tables not managed by ORM."""
+    from config import SQLITE_DIR
+    import sqlite3
+    DB_PATH = SQLITE_DIR / "metadata.db"
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS search_history (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            query TEXT NOT NULL,
+            timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
+    cursor.execute("""
+        CREATE INDEX IF NOT EXISTS idx_search_history_timestamp
+        ON search_history(timestamp DESC)
+    """)
+
+    conn.commit()
+    conn.close()
 
 
 def get_session():

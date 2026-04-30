@@ -12,6 +12,7 @@
   import KnowledgeView from './components/KnowledgeView.svelte';
   import MemoryView from './components/MemoryView.svelte';
   import Toast from './components/Toast.svelte';
+  import SearchPanel from './components/search/SearchPanel.svelte';
 
   let placeholderLabel = $derived(
     appState.currentTab === 'knowledge' ? '知识库' :
@@ -50,6 +51,8 @@
   <div class="flex h-screen bg-gray-50">
     <Sidebar />
     <main class="flex-1 flex flex-col relative">
+      <!-- 搜索面板 -->
+      <SearchPanel />
       <div class="flex-1 overflow-auto">
         {#if appState.currentTab === 'startup'}
           <StartupGuide />

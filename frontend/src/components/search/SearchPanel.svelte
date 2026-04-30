@@ -13,7 +13,7 @@
 </script>
 
 {#if searchState.isOpen}
-<div class="w-96 h-full bg-white border-l border-gray-200 shadow-lg flex flex-col">
+<div class="w-96 h-full bg-white border-l border-gray-200 shadow-lg flex flex-col fixed right-0 top-0 z-40">
   <!-- Header -->
   <div class="p-4 border-b border-gray-100">
     <div class="flex items-center justify-between mb-4">

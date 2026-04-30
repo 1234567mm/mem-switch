@@ -93,55 +93,59 @@ class PlatformSettingsRow(Base):
 @dataclass
 class ImportTask:
     """ORM model for import_tasks table."""
-    task_id: str
-    session_id: str
-    filename: str
-    file_path: str
-    total_rows: int
-    imported_rows: int
-    failed_rows: int
+    id: str
+    source_type: str
+    total_files: int
+    completed_files: int
+    failed_files: int
+    skipped_files: int
     status: str
+    progress: float
     created_at: str
     updated_at: str
 
 
 class ImportTaskRow(Base):
     __tablename__ = "import_tasks"
-    task_id = Column(String, primary_key=True)
-    session_id = Column(String, nullable=False)
-    filename = Column(String, nullable=False)
-    file_path = Column(String, nullable=False)
-    total_rows = Column(Integer, nullable=False, default=0)
-    imported_rows = Column(Integer, nullable=False, default=0)
-    failed_rows = Column(Integer, nullable=False, default=0)
-    status = Column(String, nullable=False, default="pending")
-    created_at = Column(String, nullable=False)
-    updated_at = Column(String, nullable=False)
+    id = Column(String, primary_key=True)
+    source_type = Column(String, nullable=False)
+    total_files = Column(Integer)
+    completed_files = Column(Integer, default=0)
+    failed_files = Column(Integer, default=0)
+    skipped_files = Column(Integer, default=0)
+    status = Column(String, nullable=False)
+    progress = Column(Float, default=0)
+    created_at = Column(DateTime, default=datetime.now)
+    updated_at = Column(DateTime)
 
 
 @dataclass
 class ImportTaskFile:
     """ORM model for import_task_files table."""
-    file_id: str
+    id: int
     task_id: str
-    filename: str
-    row_number: int
-    content: str
-    import_status: str
-    error_message: str
-    created_at: str
+    file_name: str
+    file_path: str
+    status: str
+    error: str
+    memories_created: int
+    session_id: str
+    skipped: bool
+    processed_at: str
 
 
 class ImportTaskFileRow(Base):
     __tablename__ = "import_task_files"
-    file_id = Column(String, primary_key=True)
-    task_id = Column(String, ForeignKey("import_tasks.task_id"), nullable=False)
-    filename = Column(String, nullable=False)
-    row_number = Column(Integer, nullable=False)
-    content = Column(Text)
-    import_status = Column(String, nullable=False, default="pending")
-    error_message = Column(Text)
-    created_at = Column(String, nullable=False)
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    task_id = Column(String, ForeignKey("import_tasks.id"))
+    file_name = Column(String, nullable=False)
+    file_path = Column(String)
+    status = Column(String, nullable=False)  # success/failed/skipped
+    error = Column(Text)
+    memories_created = Column(Integer, default=0)
+    session_id = Column(String)
+    skipped = Column(Boolean, default=False)
+    processed_at = Column(DateTime)
 
 
 Base.metadata.create_all(engine)
@@ -169,20 +173,12 @@ def init_db():
 
     # Indexes for import tasks
     cursor.execute("""
-        CREATE INDEX IF NOT EXISTS idx_import_tasks_session_id
-        ON import_tasks(session_id)
-    """)
-    cursor.execute("""
-        CREATE INDEX IF NOT EXISTS idx_import_tasks_status
-        ON import_tasks(status)
+        CREATE INDEX IF NOT EXISTS idx_import_tasks_created
+        ON import_tasks(created_at DESC)
     """)
     cursor.execute("""
         CREATE INDEX IF NOT EXISTS idx_import_task_files_task_id
         ON import_task_files(task_id)
-    """)
-    cursor.execute("""
-        CREATE INDEX IF NOT EXISTS idx_import_task_files_status
-        ON import_task_files(import_status)
     """)
 
     conn.commit()

@@ -78,6 +78,11 @@ jobs:
           cd frontend
           npm ci
 
+      - name: Build frontend
+        run: |
+          cd frontend
+          npm run build
+
       - name: Build Tauri
         run: |
           cd src-tauri

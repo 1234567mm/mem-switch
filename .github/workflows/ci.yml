@@ -58,6 +58,11 @@ jobs:
             patchelf \
             libssl-dev
 
+      - name: Install frontend deps
+        run: |
+          cd frontend
+          npm ci
+
       - name: Build frontend
         run: |
           cd frontend
@@ -68,8 +73,3 @@ jobs:
 
       - name: Format check
         run: cargo fmt --manifest-path src-tauri/Cargo.toml -- --check
-
-      - name: Install frontend deps
-        run: |
-          cd frontend
-          npm ci

@@ -25,7 +25,7 @@ else:
     else:
         raise RuntimeError(f"Unsupported: {system}")
 
-source = f"backend/dist/mem-switch-backend{ext}"
+source = f"backend/dist/mem-switch-backend-{target}{ext}"
 dest_dir = "src-tauri/binaries"
 dest = f"{dest_dir}/mem-switch-backend-{target}{ext}"
 os.makedirs(dest_dir, exist_ok=True)

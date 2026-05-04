@@ -24,14 +24,17 @@ jobs:
           - os: ubuntu-22.04-arm
             arch: arm64
           - os: macos-14
+            target: aarch64-apple-darwin
+          - os: macos-13
+            target: x86_64-apple-darwin
           - os: windows-2022
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v4
 
       - name: Setup Node.js
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@v4
         with:
           node-version: '20'
           cache: 'npm'
@@ -43,7 +46,7 @@ jobs:
       - name: Add macOS targets
         if: runner.os == 'macOS'
         run: |
-          rustup target add aarch64-apple-darwin x86_64-apple-darwin
+          rustup target add ${{ matrix.target }}
 
       - name: Install Linux system deps
         if: runner.os == 'Linux'
@@ -86,7 +89,7 @@ jobs:
       - name: Build Tauri
         run: |
           cd src-tauri
-          cargo tauri build
+          cargo tauri build${{ matrix.target && format(' --target {0}', matrix.target) || '' }}
 
       - name: Set date output
         id: date
@@ -97,8 +100,9 @@ jobs:
         run: |
           mkdir -p release-assets
           if [ "${{ runner.os }}" = "macOS" ]; then
-            cp -r src-tauri/target/release/bundle/dmg/*.app release-assets/ 2>/dev/null || true
-            cp src-tauri/target/release/mem-switch-desktop release-assets/ 2>/dev/null || true
+            cp src-tauri/target/release/bundle/dmg/*.dmg release-assets/ 2>/dev/null || true
+          elif [ "${{ runner.os }}" = "Windows" ]; then
+            cp src-tauri/target/release/bundle/nsis/*.exe release-assets/ 2>/dev/null || true
           else
             cp src-tauri/target/release/bundle/appimage/*.AppImage release-assets/ 2>/dev/null || true
             cp src-tauri/target/release/bundle/deb/*.deb release-assets/ 2>/dev/null || true
@@ -107,9 +111,9 @@ jobs:
           ls -la release-assets/
 
       - name: Upload release artifacts
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@v4
         with:
-          name: release-assets-${{ runner.os }}-${{ matrix.arch || runner.arch }}-${{ steps.date.outputs.date }}
+          name: release-assets-${{ runner.os }}-${{ matrix.target || 'native' }}-${{ matrix.arch || runner.arch }}-${{ steps.date.outputs.date }}
           path: release-assets/*
           retention-days: 3
 
@@ -120,7 +124,7 @@ jobs:
       contents: write
     steps:
       - name: Download all artifacts
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v4
         with:
           path: artifacts
           pattern: release-assets-*
@@ -139,6 +143,7 @@ jobs:
       - name: Create Nightly Release
         env:
           DATE: ${{ steps.date.outputs.date }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           gh release create "nightly-$DATE" \
             --title "Nightly Build $DATE" \

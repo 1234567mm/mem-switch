@@ -200,6 +200,7 @@ jobs:
 
       - name: Compute apt package hash
         id: apt-hash
+        shell: bash
         run: |
           HASH_4_1=$(echo 'libglib2.0-dev libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf libssl-dev' | sha256sum | cut -d' ' -f1)
           HASH_4_0=$(echo 'libglib2.0-dev libwebkit2gtk-4.0-dev libappindicator3-dev librsvg2-dev patchelf libssl-dev' | sha256sum | cut -d' ' -f1)

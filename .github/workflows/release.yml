@@ -128,13 +128,14 @@ jobs:
         shell: bash
         run: |
           mkdir -p release-assets
+          TARGET_DIR="src-tauri/target/${{ matrix.target }}/release"
           if [ "${{ runner.os }}" = "Windows" ]; then
-            cp src-tauri/target/release/bundle/nsis/*.exe release-assets/ 2>/dev/null || true
+            cp "$TARGET_DIR/bundle/nsis/"*.exe release-assets/ 2>/dev/null || true
           elif [ "${{ runner.os }}" = "macOS" ]; then
-            cp src-tauri/target/release/bundle/dmg/*.dmg release-assets/ 2>/dev/null || true
+            cp "$TARGET_DIR/bundle/dmg/"*.dmg release-assets/ 2>/dev/null || true
           else
-            cp src-tauri/target/release/bundle/appimage/*.AppImage release-assets/ 2>/dev/null || true
-            cp src-tauri/target/release/bundle/deb/*.deb release-assets/ 2>/dev/null || true
+            cp "$TARGET_DIR/bundle/appimage/"*.AppImage release-assets/ 2>/dev/null || true
+            cp "$TARGET_DIR/bundle/deb/"*.deb release-assets/ 2>/dev/null || true
           fi
           ls -la release-assets/
 

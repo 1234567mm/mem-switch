@@ -30,9 +30,11 @@ jobs:
           workspaces: src-tauri
 
       - name: Install frontend deps
+        shell: bash
         run: cd frontend && npm ci
 
       - name: Build frontend
+        shell: bash
         run: cd frontend && npm run build
 
       - name: Clippy
@@ -234,6 +236,7 @@ jobs:
             libssl-dev
 
       - name: Install frontend deps
+        shell: bash
         run: cd frontend && npm ci
 
       # 下载对应平台的 sidecar
@@ -244,6 +247,7 @@ jobs:
           path: src-tauri/binaries/
 
       - name: Verify sidecar
+        shell: bash
         run: ls -la src-tauri/binaries/
 
       # 安装 tauri-cli（缓存加速）
@@ -259,9 +263,11 @@ jobs:
         run: cargo install tauri-cli --version "^2.0.0" --locked
 
       - name: Build Tauri
+        shell: bash
         run: cd src-tauri && cargo tauri build --target ${{ matrix.target }}
 
       - name: Collect artifacts
+        shell: bash
         run: |
           mkdir -p release-assets
           TARGET="src-tauri/target/${{ matrix.target }}/release/bundle"

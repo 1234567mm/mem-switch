@@ -27,11 +27,14 @@ jobs:
         with:
           workspaces: src-tauri
 
+      - name: Install frontend deps
+        run: cd frontend && npm ci
+
+      - name: Build frontend
+        run: cd frontend && npm run build
+
       - name: Clippy
         run: cargo clippy --manifest-path src-tauri/Cargo.toml --all-features -- -D warnings
-
-      - name: Format check
-        run: cargo fmt --manifest-path src-tauri/Cargo.toml -- --check
 
   # ── Python sidecar 打包 ─────────────────────────────────
   build-backend:

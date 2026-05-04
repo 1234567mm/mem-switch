@@ -21,13 +21,14 @@
       }
     ],
     "security": {
-      "csp": null
+      "csp": null,
+      "dangerousDisableAssetCspModification": false
     },
     "withGlobalTauri": true
   },
   "bundle": {
     "active": true,
-    "targets": "all",
+    "targets": ["nsis", "dmg", "appimage", "deb"],
     "icon": [
       "icons/icon.png"
     ],
@@ -44,6 +45,18 @@
       "deb": {
         "depends": ["libgtk-3-0", "libwebkit2gtk-4.0-37", "libappindicator3-1"]
       }
+    }
+  },
+  "plugins": {
+    "shell": {
+      "sidecar": true,
+      "scope": [
+        {
+          "name": "binaries/mem-switch-backend",
+          "sidecar": true,
+          "args": true
+        }
+      ]
     }
   }
 }

@@ -87,16 +87,21 @@ jobs:
           pip install pyinstaller uvicorn fastapi
           pip install -r backend/requirements.txt
 
-      - name: Build Python backend
+      - name: Build Python backend (Windows)
+        if: runner.os == 'Windows'
         env:
           TAURI_SIDECAR_TARGET: ${{ matrix.target }}
         run: |
           cd backend
-          if [ "${{ runner.os }}" = "Windows" ]; then
-            pyinstaller --onefile --name mem-switch-backend --add-data "resources;resources" --hidden-import uvicorn.logging --hidden-import uvicorn.loops.auto --hidden-import uvicorn.protocols.http.auto --hidden-import uvicorn.protocols.websocket.auto cli.py
-          else
-            pyinstaller --onefile --name mem-switch-backend --add-data "resources:resources" --hidden-import uvicorn.logging --hidden-import uvicorn.loops.auto --hidden-import uvicorn.protocols.http.auto --hidden-import uvicorn.protocols.websocket.auto cli.py
-          fi
+          pyinstaller --onefile --name mem-switch-backend --add-data "resources;resources" --hidden-import uvicorn.logging --hidden-import uvicorn.loops.auto --hidden-import uvicorn.protocols.http.auto --hidden-import uvicorn.protocols.websocket.auto cli.py
+
+      - name: Build Python backend (Unix)
+        if: runner.os != 'Windows'
+        env:
+          TAURI_SIDECAR_TARGET: ${{ matrix.target }}
+        run: |
+          cd backend
+          pyinstaller --onefile --name mem-switch-backend --add-data "resources:resources" --hidden-import uvicorn.logging --hidden-import uvicorn.loops.auto --hidden-import uvicorn.protocols.http.auto --hidden-import uvicorn.protocols.websocket.auto cli.py
 
       - name: Prepare sidecar
         env:

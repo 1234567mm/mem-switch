@@ -93,7 +93,7 @@ jobs:
           TAURI_SIDECAR_TARGET: ${{ matrix.target }}
         run: |
           cd backend
-          rm -f mem-switch-backend.spec
+          if exist mem-switch-backend.spec del mem-switch-backend.spec
           pyinstaller --clean --onefile --name mem-switch-backend --hidden-import uvicorn.logging --hidden-import uvicorn.loops.auto --hidden-import uvicorn.protocols.http.auto --hidden-import uvicorn.protocols.websocket.auto cli.py
 
       - name: Build Python backend (Unix)

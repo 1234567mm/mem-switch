@@ -87,11 +87,12 @@ jobs:
 
       - name: Build Python backend (Windows)
         if: runner.os == 'Windows'
+        shell: pwsh
         env:
           TAURI_SIDECAR_TARGET: ${{ matrix.target }}
         run: |
           cd backend
-          if exist mem-switch-backend.spec del mem-switch-backend.spec
+          Remove-Item -Force -ErrorAction SilentlyContinue mem-switch-backend.spec
           pyinstaller --clean --onefile --name mem-switch-backend --hidden-import uvicorn.logging --hidden-import uvicorn.loops.auto --hidden-import uvicorn.protocols.http.auto --hidden-import uvicorn.protocols.websocket.auto cli.py
 
       - name: Build Python backend (Unix)

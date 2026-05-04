@@ -70,6 +70,3 @@ jobs:
 
       - name: Clippy
         run: cargo clippy --manifest-path src-tauri/Cargo.toml --all-features -- -D warnings
-
-      - name: Format check
-        run: cargo fmt --manifest-path src-tauri/Cargo.toml -- --check

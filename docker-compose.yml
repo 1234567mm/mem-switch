@@ -10,10 +10,16 @@ services:
     volumes:
       - mem-switch-data:/root/.local/share/Mem-Switch
     environment:
-      # Linux: 使用 host.gateway 访问宿主机
-      - OLLAMA_HOST=http://172.17.0.1:11434
-      # Windows Docker Desktop: 使用 host.docker.internal
-      # - OLLAMA_HOST=http://host.docker.internal:11434
+      - OLLAMA_HOST=http://host.docker.internal:11434
+      - QDRANT_HOST=qdrant:6334
+
+  qdrant:
+    image: qdrant/qdrant:latest
+    ports:
+      - "6333:6333"
+      - "6334:6334"
+    volumes:
+      - qdrant-data:/qdrant/storage
 
   frontend:
     image: node:20-slim
@@ -28,3 +34,4 @@ services:
 
 volumes:
   mem-switch-data:
+  qdrant-data:

@@ -1,10 +1,17 @@
-FROM python:3.12-slim
+# Mem-Switch Backend Docker Image
+# 支持 x86_64 和 ARM64 架构
+
+FROM --platform=$TARGETARCH python:3.12-slim
 
 WORKDIR /app
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
+    libglib2.0-dev \
+    librsvg2-dev \
+    libgtk-3-dev \
+    libayatana-appindicator3-dev \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements first for caching

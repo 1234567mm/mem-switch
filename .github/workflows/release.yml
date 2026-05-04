@@ -328,12 +328,46 @@ jobs:
           sha256sum * > SHA256SUMS.txt
           cat SHA256SUMS.txt
 
+      - name: Generate platform installation instructions
+        run: |
+          cat > platform-instructions.md << 'EOF'
+          ## 安装说明 / Installation
+
+          下载对应平台的安装包：
+
+          | 平台 | 文件 | 校验码 |
+          |------|------|--------|
+          | macOS ARM64 (Apple Silicon) | `mem-switch-macos-arm64.dmg` | SHA256 |
+          | Linux AMD64 | `mem-switch-linux-amd64.AppImage` + `.deb` | SHA256 |
+          | Linux ARM64 | `mem-switch-linux-arm64.AppImage` | SHA256 |
+          | Windows AMD64 | `mem-switch-windows-amd64.exe` (NSIS installer) | SHA256 |
+
+          ### macOS
+          1. 下载 `.dmg` 文件
+          2. 挂载镜像并拖动应用到 Applications
+          3. 首次运行需在 System Preferences > Security 允许运行
+
+          ### Linux
+          - **AppImage**: `chmod +x *.AppImage && ./*.AppImage`
+          - **DEB**: `sudo dpkg -i *.deb`
+
+          ### Windows
+          运行 `.exe` 安装包，按向导完成安装。
+
+          EOF
+          cat platform-instructions.md
+
+      - name: Combine release notes
+        run: |
+          cat release-notes.md platform-instructions.md > full-release-notes.md
+          cat full-release-notes.md
+
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
           draft: false
           prerelease: false
-          body_path: release-notes.md
+          body_path: full-release-notes.md
           files: artifacts/*
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

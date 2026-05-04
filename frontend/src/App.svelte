@@ -13,6 +13,9 @@
   import MemoryView from './components/MemoryView.svelte';
   import Toast from './components/Toast.svelte';
   import SearchPanel from './components/search/SearchPanel.svelte';
+  import EnvCheck from './lib/EnvCheck.svelte';
+
+  let envCheckPassed = $state(false);
 
   let placeholderLabel = $derived(
     appState.currentTab === 'knowledge' ? '知识库' :
@@ -43,7 +46,10 @@
   });
 </script>
 
-{#if onboardingState.isFirstRun && !onboardingState.completed}
+{#if !envCheckPassed}
+  <!-- 环境检查 -->
+  <EnvCheck onReady={() => { envCheckPassed = true; }} />
+{:else if onboardingState.isFirstRun && !onboardingState.completed}
   <!-- 首次启动引导 -->
   <OnboardingWizard />
 {:else}

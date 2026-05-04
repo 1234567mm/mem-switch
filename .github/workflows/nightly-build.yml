@@ -14,6 +14,27 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # ── Rust clippy check (runs in parallel with build-backend) ──
+  rust-check:
+    name: Rust Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust@stable
+        with:
+          components: clippy, rustfmt
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+
+      - name: Clippy
+        run: cargo clippy --manifest-path src-tauri/Cargo.toml --all-features -- -D warnings
+
+      - name: Format check
+        run: cargo fmt --manifest-path src-tauri/Cargo.toml -- --check
+
   # ── Python sidecar 打包（无 rust-check，加速）────────────
   build-backend:
     name: Build backend (${{ matrix.target }})
@@ -50,13 +71,28 @@ jobs:
       - name: Install uv
         uses: astral-sh/setup-uv@v4
 
+      - name: Cache uv packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/uv
+          key: uv-packages-${{ runner.os }}-${{ matrix.target }}
+          restore-keys: |
+            uv-packages-${{ runner.os }}-
+
+      - name: Cache backend binary
+        id: cache-backend-binary
+        uses: actions/cache@v4
+        with:
+          path: backend/dist/${{ matrix.sidecar_name }}*
+          key: backend-binary-${{ matrix.target }}
+
       - name: Install dependencies
         working-directory: backend
         run: uv pip install --system pyinstaller -r requirements.txt
 
       # PyInstaller 打包（cli.py，非 main.py）
       - name: Build sidecar (Unix)
-        if: runner.os != 'Windows'
+        if: runner.os != 'Windows' && steps.cache-backend-binary.outputs.cache-hit != 'true'
         working-directory: backend
         run: |
           pyinstaller \
@@ -78,7 +114,7 @@ jobs:
             cli.py
 
       - name: Build sidecar (Windows)
-        if: runner.os == 'Windows'
+        if: runner.os == 'Windows' && steps.cache-backend-binary.outputs.cache-hit != 'true'
         working-directory: backend
         shell: pwsh
         run: |
@@ -117,7 +153,7 @@ jobs:
   # ── Tauri 应用构建 ─────────────────────────────────────
   build:
     name: Build (${{ matrix.artifact_name }})
-    needs: [build-backend]
+    needs: [build-backend, rust-check]
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -152,7 +188,7 @@ jobs:
           cache: npm
           cache-dependency-path: frontend/package-lock.json
 
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust@stable
         with:
           targets: ${{ matrix.target }}
 
@@ -160,6 +196,21 @@ jobs:
         with:
           workspaces: src-tauri
           key: ${{ matrix.target }}
+
+      - name: Compute apt package hash
+        id: apt-hash
+        run: |
+          HASH_4_1=$(echo 'libglib2.0-dev libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf libssl-dev' | sha256sum | cut -d' ' -f1)
+          HASH_4_0=$(echo 'libglib2.0-dev libwebkit2gtk-4.0-dev libappindicator3-dev librsvg2-dev patchelf libssl-dev' | sha256sum | cut -d' ' -f1)
+          echo "hash=v1-$HASH_4_1-$HASH_4_0" >> $GITHUB_OUTPUT
+
+      - name: Cache apt packages
+        uses: actions/cache@v4
+        with:
+          path: /var/cache/apt/archives
+          key: apt-${{ runner.os }}-${{ steps.apt-hash.outputs.hash }}
+          restore-keys: |
+            apt-${{ runner.os }}-
 
       - name: Install Linux system deps
         if: runner.os == 'Linux'

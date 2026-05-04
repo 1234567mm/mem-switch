@@ -16,13 +16,28 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust@stable
         with:
           components: clippy, rustfmt
 
       - uses: Swatinem/rust-cache@v2
         with:
           workspaces: src-tauri
+
+      - name: Compute apt package hash
+        id: apt-hash
+        run: |
+          HASH_4_1=$(echo 'libglib2.0-dev libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf libssl-dev' | sha256sum | cut -d' ' -f1)
+          HASH_4_0=$(echo 'libglib2.0-dev libwebkit2gtk-4.0-dev libappindicator3-dev librsvg2-dev patchelf libssl-dev' | sha256sum | cut -d' ' -f1)
+          echo "hash=v1-$HASH_4_1-$HASH_4_0" >> $GITHUB_OUTPUT
+
+      - name: Cache apt packages
+        uses: actions/cache@v4
+        with:
+          path: /var/cache/apt/archives
+          key: apt-${{ runner.os }}-${{ steps.apt-hash.outputs.hash }}
+          restore-keys: |
+            apt-${{ runner.os }}-
 
       - name: Install Linux system deps
         if: runner.os == 'Linux'
@@ -43,6 +58,11 @@ jobs:
             patchelf \
             libssl-dev
 
+      - name: Build frontend
+        run: |
+          cd frontend
+          npm run build
+
       - name: Clippy
         run: cargo clippy --manifest-path src-tauri/Cargo.toml --all-features -- -D warnings
 
@@ -53,8 +73,3 @@ jobs:
         run: |
           cd frontend
           npm ci
-
-      - name: Build frontend
-        run: |
-          cd frontend
-          npm run build

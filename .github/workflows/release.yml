@@ -91,7 +91,7 @@ jobs:
           TAURI_SIDECAR_TARGET: ${{ matrix.target }}
         run: |
           cd backend
-          pyinstaller --onefile --name mem-switch-backend --add-data "resources;resources" --hidden-import uvicorn.logging --hidden-import uvicorn.loops.auto --hidden-import uvicorn.protocols.http.auto --hidden-import uvicorn.protocols.websocket.auto cli.py
+          pyinstaller --onefile --name mem-switch-backend --hidden-import uvicorn.logging --hidden-import uvicorn.loops.auto --hidden-import uvicorn.protocols.http.auto --hidden-import uvicorn.protocols.websocket.auto cli.py
 
       - name: Build Python backend (Unix)
         if: runner.os != 'Windows'
@@ -99,7 +99,7 @@ jobs:
           TAURI_SIDECAR_TARGET: ${{ matrix.target }}
         run: |
           cd backend
-          pyinstaller --onefile --name mem-switch-backend --add-data "resources:resources" --hidden-import uvicorn.logging --hidden-import uvicorn.loops.auto --hidden-import uvicorn.protocols.http.auto --hidden-import uvicorn.protocols.websocket.auto cli.py
+          pyinstaller --onefile --name mem-switch-backend --hidden-import uvicorn.logging --hidden-import uvicorn.loops.auto --hidden-import uvicorn.protocols.http.auto --hidden-import uvicorn.protocols.websocket.auto cli.py
 
       - name: Prepare sidecar
         env:

@@ -1,0 +1,23 @@
+# lld linker 配置 — 比 MSVC 默认 linker 快 30%~60%
+[target.x86_64-pc-windows-msvc]
+linker = "lld"
+rustflags = ["-C", "target-cpu=native"]
+
+[target.aarch64-pc-windows-msvc]
+linker = "lld"
+rustflags = ["-C", "target-cpu=native"]
+
+[target.x86_64-unknown-linux-gnu]
+rustflags = ["-C", "target-cpu=native"]
+
+[target.aarch64-unknown-linux-gnu]
+rustflags = ["-C", "target-cpu=native"]
+
+[target.x86_64-apple-darwin]
+rustflags = ["-C", "target-cpu=native"]
+
+[target.aarch64-apple-darwin]
+rustflags = ["-C", "target-cpu=native"]
+
+[build]
+rustflags = ["-C", "link-arg=-fuse-ld=lld"]

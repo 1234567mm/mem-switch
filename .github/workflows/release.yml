@@ -53,6 +53,25 @@ jobs:
         with:
           workspaces: src-tauri
 
+      - name: Install Linux system deps
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libglib2.0-dev \
+            libwebkit2gtk-4.1-dev \
+            libappindicator3-dev \
+            librsvg2-dev \
+            patchelf \
+            libssl-dev \
+            || sudo apt-get install -y \
+            libglib2.0-dev \
+            libwebkit2gtk-4.0-dev \
+            libappindicator3-dev \
+            librsvg2-dev \
+            patchelf \
+            libssl-dev
+
       - name: Clippy
         run: cargo clippy --manifest-path src-tauri/Cargo.toml --all-features -- -D warnings
 

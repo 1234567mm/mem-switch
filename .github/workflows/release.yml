@@ -54,6 +54,13 @@ jobs:
         with:
           workspaces: src-tauri
 
+      # 下载前端构建产物（Tauri compile 需要 frontendDist 存在）
+      - name: Download frontend dist
+        uses: actions/download-artifact@v4
+        with:
+          name: frontend-dist
+          path: frontend/dist/
+
       - name: Install Linux system deps
         if: runner.os == 'Linux'
         run: |

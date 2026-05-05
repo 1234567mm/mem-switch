@@ -334,6 +334,8 @@ jobs:
 
       - name: Build Tauri
         shell: bash
+        env:
+          TAURI_BUILD_SKIP_FRONTEND_BUILD: 1
         run: cd src-tauri && cargo tauri build --target ${{ matrix.target }}
 
       - name: Collect artifacts

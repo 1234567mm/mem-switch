@@ -61,6 +61,10 @@ jobs:
             target: x86_64-pc-windows-msvc
             sidecar_name: mem-switch-backend-x86_64-pc-windows-msvc
 
+          - os: macos-13
+            target: x86_64-apple-darwin
+            sidecar_name: mem-switch-backend-x86_64-apple-darwin
+
     steps:
       - uses: actions/checkout@v4
 
@@ -178,6 +182,12 @@ jobs:
             target: x86_64-pc-windows-msvc
             backend_target: x86_64-pc-windows-msvc
             artifact_name: mem-switch-windows-amd64
+
+          - os: macos-13
+            target: x86_64-apple-darwin
+            backend_target: x86_64-apple-darwin
+            artifact_name: mem-switch-macos-amd64
+            set_executable: true
 
     steps:
       - uses: actions/checkout@v4

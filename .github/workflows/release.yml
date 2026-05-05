@@ -61,6 +61,10 @@ jobs:
             target: x86_64-pc-windows-msvc
             sidecar_name: mem-switch-backend-x86_64-pc-windows-msvc
 
+          - os: windows-latest
+            target: aarch64-pc-windows-msvc
+            sidecar_name: mem-switch-backend-aarch64-pc-windows-msvc
+
           - os: macos-13
             target: x86_64-apple-darwin
             sidecar_name: mem-switch-backend-x86_64-apple-darwin
@@ -352,10 +356,12 @@ jobs:
 
           | 平台 | 文件 | 校验码 |
           |------|------|--------|
-          | macOS ARM64 (Apple Silicon) | `mem-switch-macos-arm64.dmg` | SHA256 |
-          | Linux AMD64 | `mem-switch-linux-amd64.AppImage` + `.deb` | SHA256 |
-          | Linux ARM64 | `mem-switch-linux-arm64.AppImage` | SHA256 |
-          | Windows AMD64 | `mem-switch-windows-amd64.exe` (NSIS installer) | SHA256 |
+          | macOS AMD64 (Intel) | `mem-switch-macos-amd64.dmg` | SHA256 (见 checksums.txt) |
+          | macOS ARM64 (Apple Silicon) | `mem-switch-macos-arm64.dmg` | SHA256 (见 checksums.txt) |
+          | Linux AMD64 | `mem-switch-linux-amd64.AppImage`, `.deb` | SHA256 (见 checksums.txt) |
+          | Linux ARM64 | `mem-switch-linux-arm64.AppImage`, `.deb` | SHA256 (见 checksums.txt) |
+          | Windows AMD64 | `mem-switch-windows-amd64.exe` (NSIS installer) | SHA256 (见 checksums.txt) |
+          | Windows ARM64 | `mem-switch-windows-arm64.exe` (NSIS installer) | SHA256 (见 checksums.txt) |
 
           ### macOS
           1. 下载 `.dmg` 文件

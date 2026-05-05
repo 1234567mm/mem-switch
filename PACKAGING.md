@@ -4,53 +4,26 @@
 
 | 平台 | 架构 | 状态 | 安装包格式 | 构建方式 |
 |------|------|------|-----------|----------|
-| Windows | x86_64 | ✅ 已完成 | exe (需 Windows 生成 NSIS) | 本地/交叉编译 |
-| Windows | ARM64 | ✅ 已完成 | exe | 交叉编译 (cargo-xwin) |
-| Linux | x86_64 | ✅ 已完成 | AppImage, .deb | 本地构建 |
-| Linux | ARM64 | 🔲 待构建 | AppImage, .deb | 本地构建 |
-| macOS | x86_64 | ✅ 已完成 | .app | GitHub Actions |
-| macOS | ARM64 | ✅ 已完成 | .app | GitHub Actions |
-| macOS | Universal | ✅ 已完成 | .app (双架构) | GitHub Actions |
+| Windows | x86_64 (AMD64) | ✅ 已完成 | exe (NSIS) | cargo-xwin 交叉编译 |
+| Windows | ARM64 | ✅ 已完成 | exe (NSIS) | cargo-xwin 交叉编译 |
+| Linux | x86_64 (AMD64) | ✅ 已完成 | AppImage + .deb + .rpm | 本地构建 |
+| Linux | ARM64 | ✅ 已完成 | AppImage + .deb + .rpm | 本地构建 |
+| macOS | x86_64 (Intel) | ✅ 已完成 | .dmg | GitHub Actions (macos-13) |
+| macOS | ARM64 (Apple Silicon) | ✅ 已完成 | .dmg | GitHub Actions (macos-latest) |
 
 ---
 
-## GitHub Actions 自动构建（推荐）
-
-使用 GitHub Actions 进行跨平台自动构建：
-
-### 触发构建
-
-**方式 1：推送版本标签**
-```bash
-# 编辑版本号
-vim src-tauri/Cargo.toml
-
-# 创建并推送标签
-git tag v0.1.0
-git push origin v0.1.0
-```
-
-**方式 2：使用发布脚本**
-```bash
-./scripts/release.sh 0.1.0
-```
-
-**方式 3：手动触发**
-1. 访问 GitHub Actions 页面
-2. 选择 "Release Build" workflow
-3. 点击 "Run workflow"
-
-### 构建产物
+## 构建产物（版本标签推送后自动生成）
 
 | 平台 | 架构 | 产物 |
 |------|------|------|
-| Windows | x86_64 | Mem-Switch_x64.exe |
+| Windows | x86_64 AMD64 | Mem-Switch_x64.exe |
 | Windows | ARM64 | Mem-Switch_ARM64.exe |
-| Linux | x86_64 | Mem-Switch_amd64.AppImage, .deb |
+| Linux | x86_64 AMD64 | Mem-Switch_amd64.AppImage, .deb |
 | Linux | ARM64 | Mem-Switch_arm64.AppImage, .deb |
-| macOS | x86_64 | Mem-Switch.app |
-| macOS | ARM64 | Mem-Switch.app |
-| macOS | Universal | Mem-Switch.app (x64+ARM64) |
+| macOS | x86_64 Intel | Mem-Switch_x64.dmg |
+| macOS | ARM64 | Mem-Switch_arm64.dmg |
+| All | - | checksums.txt, latest.yml, latest-linux.yml, latest-mac.yml, latest-windows.yml, latest-linux-arm64.yml, latest-arm64.yml |
 
 ---
 

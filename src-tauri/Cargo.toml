@@ -16,3 +16,13 @@ serde_json = "1"
 [features]
 default = ["custom-protocol"]
 custom-protocol = ["tauri/custom-protocol"]
+
+[profile.release]
+# 关闭 LTO — 显著加快编译速度，二进制略大但 CI 更快
+lto = false
+# 增加 codegen-units — 并行编译更快
+codegen-units = 16
+# 增量编译缓存
+incremental = true
+# 剥离调试信息（CI 中不需要）
+strip = true

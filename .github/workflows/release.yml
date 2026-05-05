@@ -41,6 +41,7 @@ jobs:
 
   rust-check:
     name: Rust Check
+    needs: [frontend]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

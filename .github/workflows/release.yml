@@ -266,8 +266,15 @@ jobs:
           path: ~/.cargo/bin/tauri
           key: tauri-cli-${{ runner.os }}-v2
 
-      - name: Install tauri-cli
-        if: steps.cache-tauri.outputs.cache-hit != 'true'
+      - name: Install tauri-cli (Linux)
+        if: steps.cache-tauri.outputs.cache-hit != 'true' && runner.os == 'Linux'
+        run: |
+          # cargo-binstall 比 cargo install 快 5-10 倍
+          curl -L --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/cargo-bins/cargo-binstall/main/install-from-binstallCargo/binaries/cargo-binstall-v1.6.0-x86_64-unknown-linux-musl.tar.gz | tar -xz
+          ./cargo-binstall -y tauri-cli --version "^2.0.0"
+
+      - name: Install tauri-cli (macOS/Windows)
+        if: steps.cache-tauri.outputs.cache-hit != 'true' && runner.os != 'Linux'
         run: cargo install tauri-cli --version "^2.0.0" --locked
 
       - name: Build Tauri

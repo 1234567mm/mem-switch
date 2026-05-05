@@ -183,6 +183,11 @@ jobs:
             backend_target: x86_64-pc-windows-msvc
             artifact_name: mem-switch-windows-amd64
 
+          - os: windows-latest
+            target: aarch64-pc-windows-msvc
+            backend_target: aarch64-pc-windows-msvc
+            artifact_name: mem-switch-windows-arm64
+
           - os: macos-13
             target: x86_64-apple-darwin
             backend_target: x86_64-apple-darwin
@@ -335,8 +340,8 @@ jobs:
       - name: Generate checksums
         run: |
           cd artifacts
-          sha256sum * > SHA256SUMS.txt
-          cat SHA256SUMS.txt
+          sha256sum * > checksums.txt
+          cat checksums.txt
 
       - name: Generate platform installation instructions
         run: |

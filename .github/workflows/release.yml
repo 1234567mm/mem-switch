@@ -178,6 +178,7 @@ jobs:
   build:
     name: Build (${{ matrix.artifact_name }})
     needs: [rust-check, build-backend, frontend]
+    if: matrix.only_release != true || github.event_name == 'release'
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -207,8 +208,8 @@ jobs:
             target: aarch64-pc-windows-msvc
             backend_target: aarch64-pc-windows-msvc
             artifact_name: mem-switch-windows-arm64
+            only_release: true
 
-          
     steps:
       - uses: actions/checkout@v4
 
@@ -283,6 +284,16 @@ jobs:
       - name: Verify sidecar
         shell: bash
         run: ls -la src-tauri/binaries/
+
+      - name: Cache Cargo registry and git
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry/
+            ~/.cargo/git/
+          key: ${{ runner.os }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-registry-
 
       # 安装 tauri-cli（缓存加速）
       - name: Cache tauri-cli

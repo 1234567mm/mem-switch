@@ -377,12 +377,94 @@ jobs:
           cat release-notes.md platform-instructions.md > full-release-notes.md
           cat full-release-notes.md
 
+      - name: Generate update manifests
+        env:
+          TAG_VERSION: ${{ github.ref_name }}
+        run: |
+          VERSION="${TAG_VERSION#v}"
+          MAJOR_MINOR="${VERSION%.*}"
+
+          cat > latest.yml << 'YML_EOF'
+          version: $VERSION
+          major_minor: $MAJOR_MINOR
+          platforms:
+            darwin-amd64:
+              filename: mem-switch-macos-amd64.dmg
+            darwin-arm64:
+              filename: mem-switch-macos-arm64.dmg
+            linux-amd64:
+              filename: mem-switch-linux-amd64.AppImage
+            linux-arm64:
+              filename: mem-switch-linux-arm64.AppImage
+            windows-amd64:
+              filename: mem-switch-windows-amd64.exe
+            windows-arm64:
+              filename: mem-switch-windows-arm64.exe
+          YML_EOF
+
+          cat > latest-linux.yml << 'YML_EOF'
+          version: $VERSION
+          major_minor: $MAJOR_MINOR
+          platforms:
+            linux-amd64:
+              filename: mem-switch-linux-amd64.AppImage
+            linux-arm64:
+              filename: mem-switch-linux-arm64.AppImage
+          YML_EOF
+
+          cat > latest-mac.yml << 'YML_EOF'
+          version: $VERSION
+          major_minor: $MAJOR_MINOR
+          platforms:
+            darwin-amd64:
+              filename: mem-switch-macos-amd64.dmg
+            darwin-arm64:
+              filename: mem-switch-macos-arm64.dmg
+          YML_EOF
+
+          cat > latest-windows.yml << 'YML_EOF'
+          version: $VERSION
+          major_minor: $MAJOR_MINOR
+          platforms:
+            windows-amd64:
+              filename: mem-switch-windows-amd64.exe
+            windows-arm64:
+              filename: mem-switch-windows-arm64.exe
+          YML_EOF
+
+          cat > latest-linux-arm64.yml << 'YML_EOF'
+          version: $VERSION
+          major_minor: $MAJOR_MINOR
+          platforms:
+            linux-arm64:
+              filename: mem-switch-linux-arm64.AppImage
+          YML_EOF
+
+          cat > latest-arm64.yml << 'YML_EOF'
+          version: $VERSION
+          major_minor: $MAJOR_MINOR
+          platforms:
+            darwin-arm64:
+              filename: mem-switch-macos-arm64.dmg
+            linux-arm64:
+              filename: mem-switch-linux-arm64.AppImage
+            windows-arm64:
+              filename: mem-switch-windows-arm64.exe
+          YML_EOF
+
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
           draft: false
           prerelease: false
           body_path: full-release-notes.md
-          files: artifacts/*
+          files: |
+            artifacts/*
+            latest.yml
+            latest-linux.yml
+            latest-mac.yml
+            latest-windows.yml
+            latest-linux-arm64.yml
+            latest-arm64.yml
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
